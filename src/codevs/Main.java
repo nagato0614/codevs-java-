@@ -43,6 +43,8 @@ public class Main {
         int obstacleNum;
 
         int board[][];
+        
+        int simulateBoard[][];
 
         public Board(int width, int height, Scanner in) {
             obstacleNum = in.nextInt();
@@ -53,15 +55,25 @@ public class Main {
                 }
             }
             in.next();
+            this.makeSimulateBoard();
+        }
+        
+        private void makeSimulateBoard() {
+        	this.simulateBoard = new int[height + packSize][width];
+        	for (int i = packSize; i < this.simulateBoard.length; i++) {
+        		for (int j = 0; j < width; j++) {
+        			this.simulateBoard[i][j] = this.board[i - packSize][j];
+        		}
+        	}
         }
     }
     
     class Pack {
     	int[][] pack = new int[width][height];
     	
-    	public void packRotate() {
+    	public void packRotate(int rot) {
     		int[][] res = this.copyPack();
-    		for (int i = 0; i < packSize; i++) {
+    		for (int i = 0; i < rot; i++) {
     			this.rot1();
     		}
     	}
@@ -102,14 +114,6 @@ public class Main {
         }
         return res;
     }
-
-    int[][] packRotate(int[][] pack, int rot) {
-        int[][] res = copyPack(pack);
-        for (int i = 0; i < rot; ++i) {
-            res = rot1(res);
-        }
-        return res;
-    }
     
     void run() {
         println(AI_NAME);
@@ -140,9 +144,10 @@ public class Main {
 
                 int rot = random.nextInt(4);
 
-                int[][] pack = fillObstaclePack(this.pack[turn].pack, my.obstacleNum);
-                pack = packRotate(pack, rot);
+                this.pack[turn].pack = fillObstaclePack(this.pack[turn].pack, my.obstacleNum);
+                this.pack[turn].packRotate(rot);
                 int left = 0, right = width - packSize;
+                int pack[][] = this.pack[turn].pack;
 
                 bad:
                 for (int i = 0; i < packSize; ++i) {
