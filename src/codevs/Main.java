@@ -95,24 +95,17 @@ public class Main {
     		}
     		return res;
     	}
-    }
-    
-    int[][] rot1(int[][] pack) {
-        int[][] res = copyPack(pack);
-        for (int i = 0; i < packSize; ++i) {
-            for (int j = 0; j < packSize; ++j) {
-                res[j][packSize - i - 1] = pack[i][j];
-            }
-        }
-        return res;
-    }
-    
-    int[][] copyPack(int[][] pack) {
-        int[][] res = new int[packSize][];
-        for (int i = 0; i < packSize; ++i) {
-            res[i] = Arrays.copyOf(pack[i], packSize);
-        }
-        return res;
+    	
+    	public void fillObstaclePack(int obstacleNum) {
+    		for (int i = 0; i < packSize; i++) {
+    			for (int j = 0; j < packSize; j++) {
+    				if (obstacleNum > 0 && this.pack[i][j] == EMPTY) {
+    					--obstacleNum;
+    					this.pack[i][j] = obstacle;
+    				}
+    			}
+    		}
+    	}
     }
     
     void run() {
@@ -144,7 +137,7 @@ public class Main {
 
                 int rot = random.nextInt(4);
 
-                this.pack[turn].pack = fillObstaclePack(this.pack[turn].pack, my.obstacleNum);
+                this.pack[turn].fillObstaclePack(my.obstacleNum);
                 this.pack[turn].packRotate(rot);
                 int left = 0, right = width - packSize;
                 int pack[][] = this.pack[turn].pack;
@@ -176,18 +169,7 @@ public class Main {
 
 
 
-    int[][] fillObstaclePack(int[][] pack, int obstacleNum) {
-        int[][] res = copyPack(pack);
-        for (int i = 0; i < packSize; ++i) {
-            for (int j = 0; j < packSize; ++j) {
-                if (obstacleNum > 0 && res[i][j] == EMPTY) {
-                    --obstacleNum;
-                    res[i][j] = obstacle;
-                }
-            }
-        }
-        return res;
-    }
+
 
 
 
