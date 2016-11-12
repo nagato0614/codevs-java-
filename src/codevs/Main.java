@@ -18,7 +18,7 @@ public class Main {
 
     int turn = -1;
 
-    int pack[][][];
+    Pack[] pack;
 
     int width;
 
@@ -55,7 +55,41 @@ public class Main {
             in.next();
         }
     }
+    
+    class Pack {
+    	int[][] pack = new int[width][height];
+    	
+    	public void packRotate() {
+    		int[][] res = this.copyPack();
+    		
+    	}
+    	
+    	//return myself copy
+    	public int[][] copyPack() {
+    		int[][] res = new int[packSize][];
+    		for (int i = 0; i < packSize; ++i) {
+    			res[i] = Arrays.copyOf(this.pack[i], packSize);
+    		}
+    		return res;
+    	}
+    }
+    
+    int[][] copyPack(int[][] pack) {
+        int[][] res = new int[packSize][];
+        for (int i = 0; i < packSize; ++i) {
+            res[i] = Arrays.copyOf(pack[i], packSize);
+        }
+        return res;
+    }
 
+    int[][] packRotate(int[][] pack, int rot) {
+        int[][] res = copyPack(pack);
+        for (int i = 0; i < rot; ++i) {
+            res = rot1(res);
+        }
+        return res;
+    }
+    
     void run() {
         println(AI_NAME);
         try (Scanner in = new Scanner(System.in)) {
@@ -65,11 +99,12 @@ public class Main {
             summation = in.nextInt();
             obstacle = summation + 1;
             maxTurn = in.nextInt();
-            pack = new int[maxTurn][packSize][packSize];
+            pack = new Pack[maxTurn];
             for (int i = 0; i < maxTurn; ++i) {
+            	pack[i] = new Pack();
                 for (int j = 0; j < packSize; ++j) {
                     for (int k = 0; k < packSize; ++k) {
-                        pack[i][j][k] = in.nextInt();
+                        pack[i].pack[j][k] = in.nextInt();
                     }
                 }
                 in.next();
@@ -84,7 +119,7 @@ public class Main {
 
                 int rot = random.nextInt(4);
 
-                int[][] pack = fillObstaclePack(this.pack[turn], my.obstacleNum);
+                int[][] pack = fillObstaclePack(this.pack[turn].pack, my.obstacleNum);
                 pack = packRotate(pack, rot);
                 int left = 0, right = width - packSize;
 
@@ -111,13 +146,7 @@ public class Main {
         }
     }
 
-    int[][] packRotate(int[][] pack, int rot) {
-        int[][] res = copyPack(pack);
-        for (int i = 0; i < rot; ++i) {
-            res = rot1(res);
-        }
-        return res;
-    }
+
 
     int[][] rot1(int[][] pack) {
         int[][] res = copyPack(pack);
@@ -142,13 +171,7 @@ public class Main {
         return res;
     }
 
-    int[][] copyPack(int[][] pack) {
-        int[][] res = new int[packSize][];
-        for (int i = 0; i < packSize; ++i) {
-            res[i] = Arrays.copyOf(pack[i], packSize);
-        }
-        return res;
-    }
+
 
     void println(String msg) {
         System.out.println(msg);
@@ -160,3 +183,5 @@ public class Main {
         System.err.flush();
     }
 }
+
+
