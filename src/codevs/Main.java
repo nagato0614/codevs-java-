@@ -66,6 +66,16 @@ public class Main {
         		}
         	}
         }
+        
+        public void showSimulateBoard() {
+        	for (int i = 0; i < this.simulateBoard.length; i++) {
+        		System.err.printf("[");
+        		for (int j = 0; j < width; j++) {
+        			System.err.printf("%d, ", this.simulateBoard[i][j]);
+        		}
+        		System.err.printf(" ]\n");
+        	}
+        }
     }
     
     class Pack {
@@ -127,10 +137,12 @@ public class Main {
                 }
                 in.next();
            }
+            
            while (true) { 
                 turn = in.nextInt();
                 millitime = in.nextLong();
                 my = new Board(width, height, in);
+                my.showSimulateBoard();
                 op = new Board(width, height, in);
 
                 debug("turn : " + turn);
@@ -142,6 +154,7 @@ public class Main {
                 int left = 0, right = width - packSize;
                 int pack[][] = this.pack[turn].pack;
 
+                /*
                 bad:
                 for (int i = 0; i < packSize; ++i) {
                     for (int j = 0; j < packSize; ++j) {
@@ -158,20 +171,13 @@ public class Main {
                     }
                     ++right;
                 }
+                */
 
-                int col = random.nextInt(right - left) + left;
+                int col = random.nextInt(8);
                 println(col + " " + rot);
             }
         }
     }
-
-
-
-
-
-
-
-
 
     void println(String msg) {
         System.out.println(msg);
