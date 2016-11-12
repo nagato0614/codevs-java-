@@ -61,7 +61,18 @@ public class Main {
     	
     	public void packRotate() {
     		int[][] res = this.copyPack();
-    		
+    		for (int i = 0; i < packSize; i++) {
+    			this.rot1();
+    		}
+    	}
+    	
+    	private void rot1() {
+    		int[][] res = this.copyPack();
+    		for (int i = 0; i < packSize; ++i) {
+    			for (int j = 0; j < packSize; ++j) {
+    				res[j][packSize - i - 1] = pack[i][j];
+    			}
+    		}
     	}
     	
     	//return myself copy
@@ -72,6 +83,16 @@ public class Main {
     		}
     		return res;
     	}
+    }
+    
+    int[][] rot1(int[][] pack) {
+        int[][] res = copyPack(pack);
+        for (int i = 0; i < packSize; ++i) {
+            for (int j = 0; j < packSize; ++j) {
+                res[j][packSize - i - 1] = pack[i][j];
+            }
+        }
+        return res;
     }
     
     int[][] copyPack(int[][] pack) {
@@ -148,15 +169,7 @@ public class Main {
 
 
 
-    int[][] rot1(int[][] pack) {
-        int[][] res = copyPack(pack);
-        for (int i = 0; i < packSize; ++i) {
-            for (int j = 0; j < packSize; ++j) {
-                res[j][packSize - i - 1] = pack[i][j];
-            }
-        }
-        return res;
-    }
+
 
     int[][] fillObstaclePack(int[][] pack, int obstacleNum) {
         int[][] res = copyPack(pack);
