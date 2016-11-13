@@ -570,6 +570,15 @@ public class Main {
             }
         }
     }
+    
+    int chain(int[] block) {
+    	int chain = 0;
+    	for (int i = 0; i < block.length; i++) {
+    		if (block[i] > 0)
+    			chain++;
+    	}
+    	return chain;
+    }
 
     void println(String msg) {
         System.out.println(msg);
