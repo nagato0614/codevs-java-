@@ -459,7 +459,9 @@ public class Main {
     	public int[][] simulate() {
     		boolean insuranceFlag = true;
     		int maxScore = 0;
+    		int maxChain = 0;
     		int nowScore = 0;
+    		int nowChain = 0;
     		int[] rotate;
     		int[] position;
     		int[][] best = new int[2][SIMTIME];
@@ -487,6 +489,7 @@ public class Main {
     					b.setPack(nowPack, position[k]);
     					int[] block = b.howManyChain();
     					nowScore = score(block);
+    					nowChain = chain(block);
     					if (b.dangerZone()) {
     						break;
     					}
