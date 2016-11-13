@@ -1,4 +1,4 @@
-﻿package codevs;
+package codevs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -83,7 +83,7 @@ public class Main {
         	ArrayList<Integer> block = new ArrayList<Integer>(1);
         	block.add(this.deleteBlock());
         	while (block.get(sum) > 0) {
-        		this.showSimulateBoard();
+        		//this.showSimulateBoard();
         		sum++;
         		this.fallBlock();
         		block.add(this.deleteBlock());
@@ -93,6 +93,118 @@ public class Main {
         		b[i] = block.get(i);
         	}
         	return b;
+        }
+        
+        public int testDeleteBlock() {
+        	int deleteCount = 0;
+        	int sum = 0;
+        	boolean[] flag = new boolean[4];
+        	for (int i = this.simulateBoard.length - 1; i > 0; i--) {
+        		for (int j = 0; j < width - 1; j++) {
+        			//when there is no block or obstacle
+        			if (this.simulateBoard[i][j] == 0 || this.simulateBoard[i][j] == obstacle) 
+        				continue;
+        			
+        			//reset flag
+        			for (int k = 0; k < flag.length; k++) 
+        				flag[k] = true;
+        			
+        			for (int x = 2; x <= summation; x++) {
+        				//horizontal
+        				if (j + (x - 1) < width && flag[0]) {
+        					sum = 0;
+        					for (int k = 0; k < x; k++) {
+        						if (this.simulateBoard[i][j + k] != 0) {
+        							sum += Math.abs(this.simulateBoard[i][j + k]);
+        						} else {
+        							flag[0] = false;
+        							break;
+        						}
+        						if (sum > summation)
+        							break;
+        					}
+        					if (flag[0] && sum == summation) {
+        						for (int k = 0; k < x; k++) {
+        							deleteCount++;
+        							this.simulateBoard[i][j + k] = -Math.abs(this.simulateBoard[i][j + k]);
+        						}
+        					}
+        				}
+        				
+        				//vertical
+        				if (i - (x - 1) > 0 && flag[1]) {
+        					sum = 0;
+        					for (int k = 0; k < x; k++) {
+        						if (this.simulateBoard[i - k][j] != 0) {
+        							sum += Math.abs(this.simulateBoard[i - k][j]);
+        						} else {
+        							flag[1] = false;
+        							break;
+        						}
+        						if (sum > summation)
+        							break;
+        					}
+        					if (sum == summation) {
+        						for (int k = 0; k < x; k++) {
+        							deleteCount++;
+        							this.simulateBoard[i - k][j] = -Math.abs(this.simulateBoard[i - k][j]);
+        						}
+        					}
+        				}
+        				
+        				//diagonally to the right
+        				if (flag[2] && i - (x - 1) > 0 && j + (x - 1) < width) {
+        					sum = 0;
+        					for (int k = 0; k < x; k++) {
+        						if (this.simulateBoard[i - k][j + k] != 0) {
+        							sum += Math.abs(this.simulateBoard[i - k][j + k]);
+        						} else {
+        							flag[2] = false;
+        							break;
+        						}
+        						if (sum > summation)
+        							break;
+        					}
+        					if (sum == summation) {
+        						for (int k = 0; k < x; k++) {
+        							deleteCount++;
+        							this.simulateBoard[i - k][j + k] = -Math.abs(this.simulateBoard[i - k][j + k]);
+        						}
+        					}
+        				}
+        				
+        				//diagonally to the left
+        				if (flag[3] && i - (x - 1) > 0 && j - (x - 1) >= 0) {
+        					sum = 0;
+        					for (int k = 0; k < x; k++) {
+        						if (this.simulateBoard[i - k][j - k] != 0) { 
+        							sum += Math.abs(this.simulateBoard[i - k][j - k]);
+        						} else {
+        							flag[3] = false;
+        							break;
+        						}
+        						if (sum > summation)
+        							break;
+        					}
+        					if (sum == summation) {
+        						for (int k = 0; k < x; k++) {
+        							deleteCount++;
+        							this.simulateBoard[i - k][j - k] = -Math.abs(this.simulateBoard[i - k][j - k]);
+        						}
+        					}
+        				}
+        			}
+        		}
+        	}
+        	this.showSimulateBoard();
+        	for (int i = 0; i < this.simulateBoard.length; i++) {
+        		for (int j = 0; j < width; j ++) {
+        			if (this.simulateBoard[i][j] < 0) {
+        				this.simulateBoard[i][j] = EMPTY;
+        			}
+        		}
+        	}
+        	return deleteCount;
         }
         
         public int[] howManyChain() {
@@ -371,6 +483,7 @@ public class Main {
 							debugArray(nowPack.pack);
 							int[][] fire = {{rotate[0]}, {position[0]}};
 							System.err.printf("rota:%d, pos:%d\n", rotate[0], position[0]);
+							debugArray(block);
 							return fire;
 						}
 
@@ -492,5 +605,3 @@ public class Main {
     	System.err.println("]");
     }
 }
-
-
