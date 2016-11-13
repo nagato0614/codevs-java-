@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.Scanner;
-import java.awt.List;
 import java.lang.Math;
 
 public class Main {
@@ -15,8 +14,9 @@ public class Main {
     
     static final String AI_NAME = "allserach";
     static final int EMPTY = 0;
-    static final int SIMTIME = 1;		//simulating time
+    static final int SIMTIME = 3;		//simulating time
     static final int MAXROTATE = 4;
+    static final int FIRE = 50;
     Random random = new Random();
     int turn = -1;
     Pack[] pack;
@@ -27,6 +27,7 @@ public class Main {
     int obstacle;
     int maxTurn;
     long millitime;
+    int[] rott;
     Board my;
     Board op;
 
@@ -58,6 +59,7 @@ public class Main {
         }
         
         public void showSimulateBoard() {
+        	System.err.printf("show simulate\n");
         	for (int i = 0; i < this.simulateBoard.length; i++) {
         		System.err.printf("[");
         		for (int j = 0; j < width; j++) {
@@ -274,7 +276,7 @@ public class Main {
     		int[][] res = this.copyPack();
     		for (int i = 0; i < packSize; ++i) {
     			for (int j = 0; j < packSize; ++j) {
-    				res[j][packSize - i - 1] = pack[i][j];
+    				this.pack[j][packSize - 1 - i] =  res[i][j];
     			}
     		}
     	}
@@ -319,61 +321,69 @@ public class Main {
     	}
     	
     	public int[][] simulate() {
+    		boolean insuranceFlag = true;
     		int maxScore = 0;
-    		int[] block;
-    		int[][] buf = new int[2][SIMTIME];
+    		int nowScore = 0;
+    		int[] rotate;
+    		int[] position;
     		int[][] best = new int[2][SIMTIME];
     		int[][] insurance = new int[2][SIMTIME];
-    		for (int i = 0; i < Math.pow(7, SIMTIME); i++) {
-    			int[] position = shinsu(i, 8);
-    			for (int j = 0; j < Math.pow(MAXROTATE, SIMTIME); j++) {
-    				int[] rotate = shinsu(j, MAXROTATE);
+    		for (int i = 0; i < (int)Math.pow(7, SIMTIME); i++) {
+    			position = shinsu(i, 8);
+    			
+    			for (int j = 0; j < (int)Math.pow(4, SIMTIME); j++) {
+    				rotate = shinsu(j, 4);
     				Board b = (Board) this.board.clone();
     				int ojama = this.obstacle;
+    				nowScore = 0;
     				
-    				//copy to buffer
-    				for (int x = 0; x < SIMTIME; x++) {
-    					buf[0][x] = rotate[x];
-    					buf[1][x] = position[x];
-    				}
     				for (int k = 0; k < SIMTIME; k++ ) {
     					Pack nowPack = (Pack)this.packs[k].clone();
-    					if (ojama > 0)
-    						ojama = nowPack.fillObstaclePack(ojama); 
-    					nowPack.packRotate(rotate[k]);
-    					b.setPack(nowPack, j);
-    					block = b.howManyChain();
-    					if (b.dangerZone())
-    						break;
-    					
-    					if (!b.dangerZone() && k == SIMTIME - 1){
-    	    				for (int x = 0; x < SIMTIME; x++) {
-    	    					insurance[0][x] = buf[0][x];
-    	    					insurance[1][x] = buf[1][x];
-    	    				}
+    					if (ojama > 0) {
+    						ojama = nowPack.fillObstaclePack(ojama);
     					}
-    					int nowScore = score(block);
+    					nowPack.packRotate(rotate[k]);
+    					b.setPack(nowPack, position[k]);
+    					nowScore = score(b.howManyChain());
+    					if (b.dangerZone()) {
+    						break;
+    					}
+						if (nowScore > FIRE && k == 0) {
+							//System.err.printf("trun:%d, score:%d\n", turn, nowScore);
+							int[][] fire = {{rotate[0]}, {position[0]}};
+							return fire;
+						}
+
+    					if (!b.dangerZone() && k == SIMTIME - 1 && insuranceFlag){
+    	    				insurance[0] = Arrays.copyOf(rotate, rotate.length);
+    	    				insurance[1] = Arrays.copyOf(position, position.length);
+    	    				insuranceFlag = false;
+    					}
     					if (nowScore > maxScore) {
     						maxScore = nowScore;
-    						for (int x = 0; x < SIMTIME; x++) {
-    							best[0][x] = buf[0][x];
-    							best[1][x] = buf[1][x];
+    						best[0] = Arrays.copyOf(rotate, rotate.length);
+    						best[1] = Arrays.copyOf(position, position.length);
+    						if (maxScore > FIRE) {
+    							return best;
     						}
     					}
     				}
     			}
     		}
-    		if (maxScore <= 0)
+    		//System.err.printf("turn : %d, score : %d\n", turn, maxScore);
+    		if (maxScore <= 0) {
     			return insurance;
+    		}
 			return best;
     	}
     }
     
     public int[] shinsu(int n, int shinsu) {
+    	int x = n;
     	int[] ans = new int[SIMTIME];
     	for (int i = SIMTIME - 1; i >= 0; i--) {
-    		ans[i] = n % shinsu;
-    		n /= shinsu;
+    		ans[i] = x % shinsu;
+    		x /= shinsu;
     	}
     	return ans;
     }
@@ -404,20 +414,26 @@ public class Main {
                 my = new Board(width, height, in);
                 op = new Board(width, height, in);
                 int col = 0, rot = 0;
-                debug("turn : " + turn);
                 Pack[] packs = new Pack[SIMTIME];
                 for (int i = 0; i < SIMTIME; i++) {
                 	packs[i] = (Pack) pack[turn + i].clone();
                 }
                 AllSearch search = new AllSearch(packs, my, my.obstacleNum);
-                if (turn % SIMTIME == 0 || my.obstacleNum > 0) {
-                	best = search.simulate();
-                }
+                best = search.simulate();
                 
-                rot = best[0][turn % SIMTIME];
-                col = best[1][turn % SIMTIME];
+                rot = best[0][0];
+                col = best[1][0];
                 
                 println(col + " " + rot);
+                
+                for (int i = 0; i < SIMTIME; i ++) {
+                	if (my.obstacleNum > 0)
+                		my.obstacleNum = packs[i].fillObstaclePack(my.obstacleNum);
+                	packs[i].packRotate(best[0][i]);
+                	my.setPack(packs[i], best[1][i]);
+                	int score = score(my.howManyChain());
+                	my.showSimulateBoard();
+                }
             }
         }
     }
@@ -449,6 +465,15 @@ public class Main {
     		}
     		System.err.printf("]\n");
     	}
+    }
+    
+    void debugArray(int[] a) {
+    	System.err.println("test");
+    	System.err.printf("[");
+    	for (int i = 0; i < a.length; i++) {
+    		System.err.printf("%d, ", a[i]);	
+    	}
+    	System.err.println("]");
     }
 }
 
