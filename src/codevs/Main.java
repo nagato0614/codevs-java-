@@ -1,4 +1,4 @@
-package codevs;
+﻿package codevs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,7 +16,7 @@ public class Main {
     static final int EMPTY = 0;
     static final int SIMTIME = 3;		//simulating time
     static final int MAXROTATE = 4;
-    static final int FIRE = 50;
+    static final int FIRE = 100;
     Random random = new Random();
     int turn = -1;
     Pack[] pack;
@@ -59,7 +59,7 @@ public class Main {
         }
         
         public void showSimulateBoard() {
-        	System.err.printf("show simulate\n");
+        	System.err.printf("turn:%d, show simulate\n", turn);
         	for (int i = 0; i < this.simulateBoard.length; i++) {
         		System.err.printf("[");
         		for (int j = 0; j < width; j++) {
@@ -76,6 +76,23 @@ public class Main {
         		}
         	}
         	this.fallBlock();
+        }
+        
+        public int[] testHMC() {
+        	int sum = 0;
+        	ArrayList<Integer> block = new ArrayList<Integer>(1);
+        	block.add(this.deleteBlock());
+        	while (block.get(sum) > 0) {
+        		this.showSimulateBoard();
+        		sum++;
+        		this.fallBlock();
+        		block.add(this.deleteBlock());
+        	}
+        	int[] b = new int[block.size()];
+        	for (int i = 0; i < block.size(); i ++) {
+        		b[i] = block.get(i);
+        	}
+        	return b;
         }
         
         public int[] howManyChain() {
@@ -116,7 +133,7 @@ public class Main {
         	int sum = 0;
         	boolean[] flag = new boolean[4];
         	for (int i = this.simulateBoard.length - 1; i > 0; i--) {
-        		for (int j = 0; j < width; j++) {
+        		for (int j = 0; j < width - 1; j++) {
         			//when there is no block or obstacle
         			if (this.simulateBoard[i][j] == 0 || this.simulateBoard[i][j] == obstacle) 
         				continue;
@@ -125,13 +142,13 @@ public class Main {
         			for (int k = 0; k < flag.length; k++) 
         				flag[k] = true;
         			
-        			for (int x = 0; x <= summation; x++) {
+        			for (int x = 2; x <= summation; x++) {
         				//horizontal
         				if (j + (x - 1) < width && flag[0]) {
         					sum = 0;
         					for (int k = 0; k < x; k++) {
         						if (this.simulateBoard[i][j + k] != 0) {
-        								sum += Math.abs(this.simulateBoard[i][j + k]);
+        							sum += Math.abs(this.simulateBoard[i][j + k]);
         						} else {
         							flag[0] = false;
         							break;
@@ -142,7 +159,7 @@ public class Main {
         					if (flag[0] && sum == summation) {
         						for (int k = 0; k < x; k++) {
         							deleteCount++;
-        							this.simulateBoard[i][j + 1] = -Math.abs(this.simulateBoard[i][j + 1]);
+        							this.simulateBoard[i][j + k] = -Math.abs(this.simulateBoard[i][j + k]);
         						}
         					}
         				}
@@ -344,13 +361,16 @@ public class Main {
     					}
     					nowPack.packRotate(rotate[k]);
     					b.setPack(nowPack, position[k]);
-    					nowScore = score(b.howManyChain());
+    					int[] block = b.howManyChain();
+    					nowScore = score(block);
     					if (b.dangerZone()) {
     						break;
     					}
 						if (nowScore > FIRE && k == 0) {
-							//System.err.printf("trun:%d, score:%d\n", turn, nowScore);
+							b.showSimulateBoard();
+							debugArray(nowPack.pack);
 							int[][] fire = {{rotate[0]}, {position[0]}};
+							System.err.printf("rota:%d, pos:%d\n", rotate[0], position[0]);
 							return fire;
 						}
 
@@ -363,9 +383,6 @@ public class Main {
     						maxScore = nowScore;
     						best[0] = Arrays.copyOf(rotate, rotate.length);
     						best[1] = Arrays.copyOf(position, position.length);
-    						if (maxScore > FIRE) {
-    							return best;
-    						}
     					}
     				}
     			}
@@ -420,18 +437,17 @@ public class Main {
                 }
                 AllSearch search = new AllSearch(packs, my, my.obstacleNum);
                 best = search.simulate();
-                
+
                 rot = best[0][0];
                 col = best[1][0];
                 
                 println(col + " " + rot);
                 
-                for (int i = 0; i < SIMTIME; i ++) {
-                	if (my.obstacleNum > 0)
-                		my.obstacleNum = packs[i].fillObstaclePack(my.obstacleNum);
-                	packs[i].packRotate(best[0][i]);
-                	my.setPack(packs[i], best[1][i]);
-                	int score = score(my.howManyChain());
+                if (best[0].length == 1) {
+                	packs[0].fillObstaclePack(my.obstacleNum);
+                	packs[0].packRotate(rot);
+                	my.setPack(packs[0], col);
+                	my.testHMC();
                 	my.showSimulateBoard();
                 }
             }
@@ -451,7 +467,7 @@ public class Main {
     public int score(int[] block) {
     	int sum = 0;
     	for (int i = 0; i < block.length; i++) {
-    		sum += (int)(Math.floor(Math.pow(1.3, i)) * Math.floor(block[i] / 2));
+    		sum += (int)(Math.floor(Math.pow(1.3, i + 1)) * Math.floor(block[i] / 2));
     	}
     	return sum;
     }
