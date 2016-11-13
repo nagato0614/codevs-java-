@@ -16,7 +16,7 @@ public class Main {
     static final int EMPTY = 0;
     static final int SIMTIME = 3;		//simulating time
     static final int MAXROTATE = 4;
-    static final int FIRE = 50;
+    static final int FIRE = 150;
     Random random = new Random();
     int turn = -1;
     Pack[] pack;
@@ -482,8 +482,8 @@ public class Main {
     					}
 						if (nowScore > FIRE && k == 0) {
 							int[][] fire = {{rotate[0]}, {position[0]}};
-							System.err.printf("rota:%d, pos:%d, Score:%d\n", rotate[0], position[0], nowScore);
-							debugArray(block);
+							//System.err.printf("rota:%d, pos:%d, Score:%d\n", rotate[0], position[0], nowScore);
+							//debugArray(block);
 							return fire;
 						}
 
@@ -553,8 +553,8 @@ public class Main {
 
                 rot = best[0][0];
                 col = best[1][0];
-                
                 println(col + " " + rot);
+                /*
                 if (best[0].length == 1) {
                 	packs[0].fillObstaclePack(my.obstacleNum);
                 	packs[0].packRotate(rot);
@@ -562,6 +562,7 @@ public class Main {
                 	my.testHMC();
                 	my.showSimulateBoard();
                 }
+                */
             }
         }
     }
