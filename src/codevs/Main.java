@@ -481,10 +481,8 @@ public class Main {
     						break;
     					}
 						if (nowScore > FIRE && k == 0) {
-							b.showSimulateBoard();
-							debugArray(nowPack.pack);
 							int[][] fire = {{rotate[0]}, {position[0]}};
-							System.err.printf("rota:%d, pos:%d\n", rotate[0], position[0]);
+							System.err.printf("rota:%d, pos:%d, Score:%d\n", rotate[0], position[0], nowScore);
 							debugArray(block);
 							return fire;
 						}
