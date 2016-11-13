@@ -16,7 +16,7 @@ public class Main {
     static final int EMPTY = 0;
     static final int SIMTIME = 3;		//simulating time
     static final int MAXROTATE = 4;
-    static final int FIRE = 100;
+    static final int FIRE = 50;
     Random random = new Random();
     int turn = -1;
     Pack[] pack;
@@ -144,7 +144,7 @@ public class Main {
         						if (sum > summation)
         							break;
         					}
-        					if (sum == summation) {
+        					if (flag[1] && sum == summation) {
         						for (int k = 0; k < x; k++) {
         							deleteCount++;
         							this.simulateBoard[i - k][j] = -Math.abs(this.simulateBoard[i - k][j]);
@@ -165,7 +165,7 @@ public class Main {
         						if (sum > summation)
         							break;
         					}
-        					if (sum == summation) {
+        					if (flag[2] && sum == summation) {
         						for (int k = 0; k < x; k++) {
         							deleteCount++;
         							this.simulateBoard[i - k][j + k] = -Math.abs(this.simulateBoard[i - k][j + k]);
@@ -186,7 +186,7 @@ public class Main {
         						if (sum > summation)
         							break;
         					}
-        					if (sum == summation) {
+        					if (flag[3] && sum == summation) {
         						for (int k = 0; k < x; k++) {
         							deleteCount++;
         							this.simulateBoard[i - k][j - k] = -Math.abs(this.simulateBoard[i - k][j - k]);
@@ -255,6 +255,8 @@ public class Main {
         				flag[k] = true;
         			
         			for (int x = 2; x <= summation; x++) {
+        				if (!flag[0] && !flag[1] && !flag[2] && !flag[3])
+        					break;
         				//horizontal
         				if (j + (x - 1) < width && flag[0]) {
         					sum = 0;
@@ -289,7 +291,7 @@ public class Main {
         						if (sum > summation)
         							break;
         					}
-        					if (sum == summation) {
+        					if (flag[1] && sum == summation) {
         						for (int k = 0; k < x; k++) {
         							deleteCount++;
         							this.simulateBoard[i - k][j] = -Math.abs(this.simulateBoard[i - k][j]);
@@ -310,7 +312,7 @@ public class Main {
         						if (sum > summation)
         							break;
         					}
-        					if (sum == summation) {
+        					if (flag[2] && sum == summation) {
         						for (int k = 0; k < x; k++) {
         							deleteCount++;
         							this.simulateBoard[i - k][j + k] = -Math.abs(this.simulateBoard[i - k][j + k]);
@@ -331,9 +333,9 @@ public class Main {
         						if (sum > summation)
         							break;
         					}
-        					if (sum == summation) {
+        					if (flag[3] && sum == summation) {
         						for (int k = 0; k < x; k++) {
-        							deleteCount += 1;
+        							deleteCount++;
         							this.simulateBoard[i - k][j - k] = -Math.abs(this.simulateBoard[i - k][j - k]);
         						}
         					}
@@ -538,7 +540,7 @@ public class Main {
                 in.next();
            }
            int[][] best = new int[2][SIMTIME];
-           while (true) { 
+           while (true) {
                 turn = in.nextInt();
                 millitime = in.nextLong();
                 my = new Board(width, height, in);
@@ -555,7 +557,6 @@ public class Main {
                 col = best[1][0];
                 
                 println(col + " " + rot);
-                
                 if (best[0].length == 1) {
                 	packs[0].fillObstaclePack(my.obstacleNum);
                 	packs[0].packRotate(rot);
