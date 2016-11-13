@@ -15,7 +15,7 @@ public class Main {
     
     static final String AI_NAME = "allserach";
     static final int EMPTY = 0;
-    static final int SIMTIME = ;		//simulating time
+    static final int SIMTIME = 1;		//simulating time
     static final int MAXROTATE = 4;
     Random random = new Random();
     int turn = -1;
@@ -325,7 +325,7 @@ public class Main {
     		int[][] best = new int[2][SIMTIME];
     		int[][] insurance = new int[2][SIMTIME];
     		for (int i = 0; i < Math.pow(7, SIMTIME); i++) {
-    			int[] position = shinsu(i, 7);
+    			int[] position = shinsu(i, 8);
     			for (int j = 0; j < Math.pow(MAXROTATE, SIMTIME); j++) {
     				int[] rotate = shinsu(j, MAXROTATE);
     				Board b = (Board) this.board.clone();
@@ -336,7 +336,6 @@ public class Main {
     					buf[0][x] = rotate[x];
     					buf[1][x] = position[x];
     				}
-    				
     				for (int k = 0; k < SIMTIME; k++ ) {
     					Pack nowPack = (Pack)this.packs[k].clone();
     					if (ojama > 0)
@@ -439,6 +438,17 @@ public class Main {
     		sum += (int)(Math.floor(Math.pow(1.3, i)) * Math.floor(block[i] / 2));
     	}
     	return sum;
+    }
+    
+    void debugArray(int[][] a) {
+    	System.err.println("test");
+    	for (int i = 0; i < a.length; i++) {
+    		System.err.printf("[");
+    		for (int j = 0; j < a[0].length; j++) {
+    			System.err.printf("%d, ", a[i][j]);
+    		}
+    		System.err.printf("]\n");
+    	}
     }
 }
 
