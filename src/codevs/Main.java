@@ -14,9 +14,10 @@ public class Main {
     
     static final String AI_NAME = "AdditionalSimulate";
     static final int EMPTY = 0;
-    static final int SIMTIME = 2;		//simulating time
+    static final int SIMTIME = 4;		//simulating time
     static final int MAXROTATE = 4;
     static final int FIRE = 20;
+    static final int SIZE = 40;
     Random random = new Random();
     int turn = -1;
     Pack[] pack;
@@ -27,6 +28,7 @@ public class Main {
     int obstacle;
     int maxTurn;
     long millitime;
+    
     Board my;
     Board op;
 
@@ -443,36 +445,80 @@ public class Main {
     		return cpy;
     	}
     }
-    
-    public class AllSearch {
+
+    public class AdditionalSimulate {
     	private Pack[] packs;
     	private Board board;
     	private int obstacle;
-    	public AllSearch(Pack[] p, Board b, int obstacle) {
+    	private int bestWay = 0;
+    	public AdditionalSimulate(Pack[] p, Board b, int obstacle) {
     		this.packs = p;
     		this.board = b;
     		this.obstacle = obstacle;
     	}
     	
-    	public int[][] simulate() {
-    		int bestWay = 0;
+    	public int[][] fire() {
+    		int simulateTimes = 1;
+    		int maxScore = 0;
+    		int nowScore = 0;
+    		int[] rotate;
+    		int[] position;
+    		int[][] best = new int[2][simulateTimes];
+    		int[][] insurance = new int[2][simulateTimes];
+    		for (int i = 0; i < (int)Math.pow(7, simulateTimes); i++) {
+    			position = shinsu(i, 8, simulateTimes);
+    			
+    			for (int j = 0; j < (int)Math.pow(4, simulateTimes); j++) {
+    				rotate = shinsu(j, 4, simulateTimes);
+    				Board b = (Board) this.board.clone();
+    				int ojama = this.obstacle;
+    				nowScore = 0;
+    				
+    				for (int k = 0; k < simulateTimes; k++ ) {
+    					Pack nowPack = (Pack)this.packs[k].clone();
+    					if (ojama > 0) {
+    						ojama = nowPack.fillObstaclePack(ojama);
+    					}
+    					nowPack.packRotate(rotate[k]);
+    					b.setPack(nowPack, position[k]);
+    					int[] block = b.howManyChain();
+    					
+    					if (b.dangerZone()) {
+    						break;
+    					}
+    					
+    					if (nowScore > FIRE && k == 0) {
+							int[][] fire = {{rotate[0]}, {position[0]}};
+							//System.err.printf("rota:%d, pos:%d, Score:%d\n", rotate[0], position[0], nowScore);
+							//debugArray(block);
+							return fire;
+						}
+    				}
+    			}
+    		}
+    		return null;
+    	}
+    	
+    	public int[][] simulateTwo() {
+    		int simulateTimes = 2;
+    		int[][] way = new int[2][SIZE];
     		boolean insuranceFlag = true;
     		int maxScore = 0;
     		int nowScore = 0;
     		int[] rotate;
     		int[] position;
-    		int[][] best = new int[2][SIMTIME];
-    		int[][] insurance = new int[2][SIMTIME];
-    		for (int i = 0; i < (int)Math.pow(7, SIMTIME); i++) {
-    			position = shinsu(i, 8);
+    		int[][] best = new int[2][simulateTimes];
+    		int[][] insurance = new int[2][simulateTimes];
+    		for (int i = 0; i < (int)Math.pow(7, simulateTimes); i++) {
+    			position = shinsu(i, 8, simulateTimes);
     			
-    			for (int j = 0; j < (int)Math.pow(4, SIMTIME); j++) {
-    				rotate = shinsu(j, 4);
+    			for (int j = 0; j < (int)Math.pow(4, simulateTimes); j++) {
+    				rotate = shinsu(j, 4, simulateTimes);
     				Board b = (Board) this.board.clone();
     				int ojama = this.obstacle;
     				nowScore = 0;
     				
-    				for (int k = 0; k < SIMTIME; k++ ) {
+    				for (int k = 0; k < simulateTimes; k++ ) {
     					Pack nowPack = (Pack)this.packs[k].clone();
     					if (ojama > 0) {
     						ojama = nowPack.fillObstaclePack(ojama);
@@ -484,46 +530,107 @@ public class Main {
     					if (b.dangerZone()) {
     						break;
     					}
-						if (nowScore > FIRE && k == 0) {
+    					
+						/*if (nowScore > FIRE && k == 0) {
 							int[][] fire = {{rotate[0]}, {position[0]}};
 							System.err.printf("rota:%d, pos:%d, Score:%d\n", rotate[0], position[0], nowScore);
 							debugArray(block);
 							return fire;
-						}
+						}*/
 						
-						if (k < SIMTIME - 1)
+						if (k < simulateTimes - 1)
 							continue;
-
-    					if (!b.dangerZone() && k == SIMTIME - 1 && insuranceFlag){
-    	    				insurance[0] = Arrays.copyOf(rotate, rotate.length);
-    	    				insurance[1] = Arrays.copyOf(position, position.length);
-    	    				insuranceFlag = false;
-    					}
+					
     					if (nowScore > maxScore) {
     						bestWay = 0;
+    						way = new int[2][SIZE];
     						maxScore = nowScore;
     						best[0] = Arrays.copyOf(rotate, rotate.length);
     						best[1] = Arrays.copyOf(position, position.length);
     					}
     					
     					if (nowScore == maxScore) {
+    						way[0][bestWay] = best[0][0];
+    						way[1][bestWay] = best[1][0];
     						bestWay ++;
     					}
     				}
     			}
     		}
-    		System.err.printf("turn : %d, bestWay : %d\n", turn, bestWay);
-    		if (maxScore <= 0) {
+    		if (maxScore <= 0)
     			return insurance;
+			return way;
+    	}
+    	
+    	public int[][] simulate() {
+    		int addSimTime = 3;
+    		int[][] way = this.simulateTwo();
+    		int maxScore = 0;
+    		int nowScore = 0;
+    		int[] rotate;
+    		int[] position;
+    		boolean insuranceFlag = true;
+    		int[][] best = new int[2][addSimTime];
+    		int[][] insurance = new int[2][addSimTime];
+    		
+    		for (int i = 0; i < bestWay; i++) {
+    			int ojama = this.obstacle;
+    			Board b = (Board) this.board.clone();
+    			Pack p = (Pack) this.packs[0].clone();
+    			if (ojama > 0)
+    				p.fillObstaclePack(ojama);
+    			p.packRotate(way[0][i]);
+    			b.setPack(p, way[1][i]);
+    			b.howManyChain();
+    			for (int j = 0; j < (int)Math.pow(8, addSimTime); j++) {
+        			position = shinsu(j, 8, addSimTime);
+        			
+        			for (int k = 0; k < (int)Math.pow(4, addSimTime); k++) {
+        				rotate = shinsu(k, 4, addSimTime);
+        				Board nowBoard = (Board) b.clone();
+        				nowScore = 0;
+        				for (int l = 0; l < addSimTime; l++) {
+        					Pack nowPack = (Pack)this.packs[l + 1].clone();
+        					if (ojama > 0) {
+        						ojama = nowPack.fillObstaclePack(ojama);
+        					}
+        					nowPack.packRotate(rotate[k]);
+        					b.setPack(nowPack, position[k]);
+        					int[] block = b.howManyChain();
+        					nowScore = score(block);
+        					
+        					if (b.dangerZone()) {
+        						break;
+        					}
+        					
+    						if (k < addSimTime - 1)
+    							continue;
+    						
+    						if (insuranceFlag) {
+    							insurance[0] = Arrays.copyOf(rotate, rotate.length);
+        						insurance[1] = Arrays.copyOf(position, position.length);
+        						insuranceFlag = false;
+    						}
+    					
+        					if (nowScore > maxScore) {
+        						maxScore = nowScore;
+        						best[0] = Arrays.copyOf(rotate, rotate.length);
+        						best[1] = Arrays.copyOf(position, position.length);
+        					}
+        				}
+        				
+        			}
+    			}
     		}
-			return best;
+    		
+    		return best;
     	}
     }
     
-    public int[] shinsu(int n, int shinsu) {
+    public int[] shinsu(int n, int shinsu, int length) {
     	int x = n;
-    	int[] ans = new int[SIMTIME];
-    	for (int i = SIMTIME - 1; i >= 0; i--) {
+    	int[] ans = new int[length];
+    	for (int i = length - 1; i >= 0; i--) {
     		ans[i] = x % shinsu;
     		x /= shinsu;
     	}
@@ -560,8 +667,10 @@ public class Main {
                 for (int i = 0; i < SIMTIME; i++) {
                 	packs[i] = (Pack) pack[turn + i].clone();
                 }
-                AllSearch search = new AllSearch(packs, my, my.obstacleNum);
-                best = search.simulate();
+                AdditionalSimulate search = new AdditionalSimulate(packs, my, my.obstacleNum);
+                best = search.fire();
+                if (best == null)
+                	best = search.simulate();
 
                 rot = best[0][0];
                 col = best[1][0];
