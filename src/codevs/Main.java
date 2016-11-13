@@ -27,6 +27,8 @@ public class Main {
     int obstacle;
     int maxTurn;
     long millitime;
+    int beforeScore = 0;
+    int beforeChain = 0;
     Board my;
     Board op;
 
@@ -443,13 +445,13 @@ public class Main {
     		return cpy;
     	}
     }
-    
-    public class AllSearch {
+
+    public class Divide {
     	private Pack[] packs;
     	private Board board;
     	private int obstacle;
-    	public AllSearch(Pack[] p, Board b, int obstacle) {
-    		this.packs = p;
+    	public Divide(Pack[] p, Board b, int obstacle) {
+       		this.packs = p;
     		this.board = b;
     		this.obstacle = obstacle;
     	}
@@ -462,8 +464,13 @@ public class Main {
     		int[] position;
     		int[][] best = new int[2][SIMTIME];
     		int[][] insurance = new int[2][SIMTIME];
-    		for (int i = 0; i < (int)Math.pow(7, SIMTIME); i++) {
-    			position = shinsu(i, 8);
+    		for (int i = 0; i < (int)Math.pow(4, SIMTIME); i++) {
+    			position = shinsu(i, 4);
+    			for (int j = 0; j < position.length; j++) {
+    				if ((turn + j) % 2 == 0)
+    					position[j] += 4;
+    			}
+    			debugArray(position);
     			
     			for (int j = 0; j < (int)Math.pow(4, SIMTIME); j++) {
     				rotate = shinsu(j, 4);
@@ -551,7 +558,7 @@ public class Main {
                 for (int i = 0; i < SIMTIME; i++) {
                 	packs[i] = (Pack) pack[turn + i].clone();
                 }
-                AllSearch search = new AllSearch(packs, my, my.obstacleNum);
+                Divide search = new Divide(packs, my, my.obstacleNum);
                 best = search.simulate();
 
                 rot = best[0][0];
