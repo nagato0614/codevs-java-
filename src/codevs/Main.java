@@ -12,11 +12,11 @@ public class Main {
         new Main().run();
     }
     
-    static final String AI_NAME = "DIVIDE";
+    static final String AI_NAME = "AdditionalSimulate";
     static final int EMPTY = 0;
-    static final int SIMTIME = 4;		//simulating time
+    static final int SIMTIME = 2;		//simulating time
     static final int MAXROTATE = 4;
-    static final int FIRE = 100;
+    static final int FIRE = 20;
     Random random = new Random();
     int turn = -1;
     Pack[] pack;
@@ -455,6 +455,7 @@ public class Main {
     	}
     	
     	public int[][] simulate() {
+    		int bestWay = 0;
     		boolean insuranceFlag = true;
     		int maxScore = 0;
     		int nowScore = 0;
@@ -489,6 +490,9 @@ public class Main {
 							debugArray(block);
 							return fire;
 						}
+						
+						if (k < SIMTIME - 1)
+							continue;
 
     					if (!b.dangerZone() && k == SIMTIME - 1 && insuranceFlag){
     	    				insurance[0] = Arrays.copyOf(rotate, rotate.length);
@@ -496,14 +500,19 @@ public class Main {
     	    				insuranceFlag = false;
     					}
     					if (nowScore > maxScore) {
+    						bestWay = 0;
     						maxScore = nowScore;
     						best[0] = Arrays.copyOf(rotate, rotate.length);
     						best[1] = Arrays.copyOf(position, position.length);
     					}
+    					
+    					if (nowScore == maxScore) {
+    						bestWay ++;
+    					}
     				}
     			}
     		}
-    		//System.err.printf("turn : %d, score : %d\n", turn, maxScore);
+    		System.err.printf("turn : %d, bestWay : %d\n", turn, bestWay);
     		if (maxScore <= 0) {
     			return insurance;
     		}
