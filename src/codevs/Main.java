@@ -12,11 +12,11 @@ public class Main {
         new Main().run();
     }
     
-    static final String AI_NAME = "allserach";
+    static final String AI_NAME = "DIVIDE";
     static final int EMPTY = 0;
-    static final int SIMTIME = 3;		//simulating time
+    static final int SIMTIME = 4;		//simulating time
     static final int MAXROTATE = 4;
-    static final int FIRE = 50;
+    static final int FIRE = 100;
     Random random = new Random();
     int turn = -1;
     Pack[] pack;
@@ -27,7 +27,6 @@ public class Main {
     int obstacle;
     int maxTurn;
     long millitime;
-    int[] rott;
     Board my;
     Board op;
 
@@ -559,6 +558,7 @@ public class Main {
                 col = best[1][0];
                 
                 println(col + " " + rot);
+                /*
                 if (best[0].length == 1) {
                 	packs[0].fillObstaclePack(my.obstacleNum);
                 	packs[0].packRotate(rot);
@@ -566,6 +566,7 @@ public class Main {
                 	my.testHMC();
                 	my.showSimulateBoard();
                 }
+                */
             }
         }
     }
