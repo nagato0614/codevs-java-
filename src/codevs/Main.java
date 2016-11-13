@@ -224,17 +224,21 @@ public class Main {
         }
         
         public void fallBlock() {
+        	int maxHeight = 1;
+        	int buf = 1;
         	while (true) {
         		int sum = 0;
-        		for (int i = this.simulateBoard.length - 1; i > 0; i--) {
+        		for (int i = this.simulateBoard.length - 1; i >= maxHeight; i--) {
         			for (int j = 0; j < width; j++) {
         				if (this.simulateBoard[i][j] == 0 && this.simulateBoard[i - 1][j] > 0) {
+        					buf = i;
         					sum++;
         					this.simulateBoard[i][j] = this.simulateBoard[i - 1][j];
         					this.simulateBoard[i - 1][j] = 0;
         				}	
         			}
         		}
+        		maxHeight = buf;
         		if (sum == 0)
         			break;
         	}
