@@ -12,12 +12,17 @@ public class Main {
         new Main().run();
     }
     
-    static final String AI_NAME = "Monte Carlo";
+    static final String AI_NAME = "Monte_Carlo";
     static final int EMPTY = 0;
     static final int SIMTIME = 4;		//simulating time
     static final int MAXROTATE = 4;
     static final int FIRE = 100;
     static final int SIZE = 110;
+    
+    //MonteCarlo
+    static final int THRESHOLD = 10;
+    static final int MAX_SIMULATE = 100;
+    
     Random random = new Random();
     int turn = -1;
     Pack[] pack;
@@ -28,6 +33,7 @@ public class Main {
     int obstacle;
     int maxTurn;
     long millitime;
+    
     
     Board my;
     Board op;
@@ -623,6 +629,40 @@ public class Main {
     			return insurance;
     		return best;
     	}
+    }
+    
+    public class Node {
+    	Node parent = null;
+    	Node children[] = null;
+    	int childCount = 0;
+    	int PlayOutCount = 0;
+    	
+    	//set[0] = setPosition, set[1] = rotate;
+    	int set[] = null;
+    	
+    	double successCount = 0;
+    	double success = 0.0;
+    	
+    	public Node() {}
+    	
+    	public Node(Node parent, int set[]) {
+    		this.parent = parent;
+    		this.parent.childCount++;
+    		this.set = set;
+    	}
+    }
+    
+    public class MonteCarlo {
+    	private Board board;
+    	private int obstacle;
+    	
+    	
+    	public MonteCarlo(Board b, int obstacle) {
+    		this.board = b;
+    		this.obstacle = obstacle;
+    	}
+    	
+    
     }
     
     public int[] shinsu(int n, int shinsu, int length) {
