@@ -15,13 +15,18 @@ public class Main {
     static final String AI_NAME = "Monte_Carlo";
     static final int EMPTY = 0;
     static final int SIMTIME = 4;		//simulating time
-    static final int MAXROTATE = 4;
     static final int FIRE = 100;
     static final int SIZE = 110;
     
+    static final int POS = 8;
+    static final int ROT = 4;
+    
     //MonteCarlo
     static final int MAX_SIMULATE = 100;
+    static final int EXPANDCOUNT = 10;
+    static final int SIMULATE_NUMBER = 28;
     static final int FINISH_PLAYOFF = 20;
+    static final int PLAYOUT_COUNT = 5;
     
     
     Random random = new Random();
@@ -657,8 +662,41 @@ public class Main {
     		this.parent.childCount++;
     		this.set = set;
     	}
+    
     	
+    	public void addSuccess(double success) {
+    		this.PlayOutCount++;
+    		this.successCount += success;
+    		this.success = this.successCount / this.PlayOutCount;
+    		this.recountSeccess();
+    	}
+
+    	public void recountSeccess() {
+    		for (Node pr = this; pr != null; pr = pr.parent) {
+    			if (pr.childCount == 0)
+    				continue;
+    			pr.PlayOutCount = 0;
+    			for (Node nd : pr.children) {
+    				if (nd != null) 
+    					pr.PlayOutCount += nd.PlayOutCount;
+    			}
+    			double max = -1.0;
+    			for (int i = 0; i < pr.children.length; i++) {
+    				Node ch = pr.children[i];
+    				if (ch == null)
+    					continue;
+    				if (ch.success > max) {
+    					pr.success = max = ch.success;
+    				}
+    				pr.success = max;
+    			}
+    		}
+    	}
     	
+    	public void set(int[] a) {
+    		this.set[0] = a[0];
+    		this.set[1] = a[1];
+    	}
     }
     
     public class MonteCarlo {
@@ -674,9 +712,73 @@ public class Main {
     		this.turn = turn;
     	}
     	
+    	public int[] playOutTree(int playOutCount, int nowTurn) {
+    		if (this.board.dangerZone())
+    			return null;
+    		
+    		while (root.PlayOutCount < playOutCount) {
+    			playOut(root, nowTurn);
+    		}
+    		
+    		int maxCount = -1;
+    		Node maxnd = null;
+    		if (this.root.childCount > 0) {
+    			for (Node nd : root.children) {
+    				if (nd == null) {
+    					if (nd.PlayOutCount > maxCount) {
+    						maxCount = nd.PlayOutCount;
+    						maxnd = nd;
+    					}
+    				}
+    			}
+    		}
+    		
+    		if (maxnd == null)
+    			return null;
+    		
+    		return maxnd.set;
+    	}
+    	
+    	public void playOut(Node node, int nowTurn) {
+    		if (node.childCount == 0) {
+    			if (node.PlayOutCount + 1 >= EXPANDCOUNT) {
+    				makeBranch(node, nowTurn);
+    			} else {
+    				double sc = simplePlayOut(node, nowTurn);
+    			}
+    		} else {
+    			Node bestNode = null;
+    			double max = -1;
+    			for (int i = 0; i < node.children.length; i++) {
+    				if (node.children[i] == null)
+    					continue;
+    				if (max < node.children[i].success) {
+    					max = node.children[i].success;
+    				}
+    			}
+    		}
+    	}
+    	
+    	public void makeBranch(Node parent, int nowTurn) {
+    		parent.children = new Node[SIMULATE_NUMBER];
+    		parent.childCount = 0;
+    		parent.PlayOutCount++;
+    		
+    		for (int i = 0; i < SIMULATE_NUMBER; i++) {
+    			int[] set = new int[2];
+    			set[1] = i % ROT;
+    			set[0] = i - set[1];
+    			nextTurn((Board)parent.board.clone(), nowTurn, set);
+    			Node nd = new Node(parent, set, (Board) parent.board.clone());
+    			parent.children[i] = nd;
+    			
+    			double sr = simplePlayOut(nd, nowTurn + 1);
+    			nd.addSuccess(sr);
+    		}
+    	}
     	
     	//do playOut one time
-    	private double simplePlayOut(Node node, int turn) {
+    	private double simplePlayOut(Node node, int nowTurn) {
     		Board b = (Board) node.board.clone();
     		Pack p = null;
     		int pos = 0, rot = 0;
@@ -685,13 +787,13 @@ public class Main {
     		for (int i = 0; i < MAX_SIMULATE; i++) {
     			chain = 0;
     			block = null;
-    			if (turn + i > maxTurn)
+    			if (nowTurn + i > maxTurn)
     				break;
     			//make next position and rotate
     			pos = random.nextInt(8);
     			rot = random.nextInt(4);
     			
-    			p = (Pack) pack[turn + i].clone();
+    			p = (Pack) pack[nowTurn + i].clone();
     			b.obstacleNum = p.fillObstaclePack(b.obstacleNum);
     			p.packRotate(rot);
     			b.setPack(p, pos);
@@ -704,6 +806,15 @@ public class Main {
     		}
     		return 0.0;
     	}
+    }
+    
+    public void nextTurn(Board board, int turn, int[] set) {
+    	Pack p = (Pack) pack[turn].clone();
+    	if (board.obstacleNum > 0)
+    		board.obstacleNum = p.fillObstaclePack(board.obstacleNum);
+    	p.packRotate(set[1]);
+    	board.setPack(p, set[0]);
+    	board.howManyChain();
     }
     
     public int[] shinsu(int n, int shinsu, int length) {
@@ -746,10 +857,8 @@ public class Main {
                 for (int i = 0; i < SIMTIME; i++) {
                 	packs[i] = (Pack) pack[turn + i].clone();
                 }
-                AdditionalSimulate search = new AdditionalSimulate(packs, my, my.obstacleNum);
-                best = search.fire();
-                if (best == null)
-                	best = search.simulate();
+                MonteCarlo monte = new MonteCarlo((Board) my.clone(), my.obstacleNum, turn);
+                best = monte.playOutTree(PLAYOUT_COUNT, turn);
 
                 rot = best[0];
                 col = best[1];
