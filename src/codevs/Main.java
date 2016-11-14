@@ -459,7 +459,7 @@ public class Main {
     		int[] position;
     		int[][] best = new int[2][SIMTIME];
     		int[][] insurance = new int[2][SIMTIME];
-    		for (int i = 0; i < (int)Math.pow(7, SIMTIME); i++) {
+    		for (int i = 0; i < (int)Math.pow(8, SIMTIME); i++) {
     			position = shinsu(i, 8);
     			
     			for (int j = 0; j < (int)Math.pow(4, SIMTIME); j++) {
