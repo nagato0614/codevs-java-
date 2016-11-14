@@ -21,12 +21,14 @@ public class Main {
     static final int POS = 8;
     static final int ROT = 4;
     
+    static final double UCBCONSTANT = 0.1;
+    
     //MonteCarlo
-    static final int MAX_SIMULATE = 100;
-    static final int EXPANDCOUNT = 10;
-    static final int SIMULATE_NUMBER = 28;
-    static final int FINISH_PLAYOFF = 20;
-    static final int PLAYOUT_COUNT = 5;
+    static final int MAX_SIMULATE =	50;
+    static final int EXPANDCOUNT = 5;		//
+    static final int SIMULATE_NUMBER = 32;
+    static final int FINISH_PLAYOFF = 100;	//score
+    static final int PLAYOUT_COUNT = 2500;	//do playout times
     
     
     Random random = new Random();
@@ -458,185 +460,6 @@ public class Main {
     	}
     }
 
-    public class AdditionalSimulate {
-    	private Pack[] packs;
-    	private Board board;
-    	private int obstacle;
-    	private int bestWay = 0;
-    	public AdditionalSimulate(Pack[] p, Board b, int obstacle) {
-    		this.packs = p;
-    		this.board = b;
-    		this.obstacle = obstacle;
-    	}
-    	
-    	public int[] fire() {
-    		int simulateTimes = 1;
-    		int nowScore = 0;
-    		int[] rotate;
-    		int[] position;
-    		for (int i = 0; i < (int)Math.pow(8, simulateTimes); i++) {
-    			position = shinsu(i, 8, simulateTimes);
-    			
-    			for (int j = 0; j < (int)Math.pow(4, simulateTimes); j++) {
-    				rotate = shinsu(j, 4, simulateTimes);
-    				Board b = (Board) this.board.clone();
-    				int ojama = this.obstacle;
-    				nowScore = 0;
-    				
-    				for (int k = 0; k < simulateTimes; k++ ) {
-    					Pack nowPack = (Pack)this.packs[k].clone();
-    					if (ojama > 0) {
-    						ojama = nowPack.fillObstaclePack(ojama);
-    					}
-    					nowPack.packRotate(rotate[k]);
-    					b.setPack(nowPack, position[k]);
-    					nowScore = score(b.howManyChain());
-    					
-    					if (b.dangerZone()) {
-    						break;
-    					}
-    					
-    					if (nowScore > FIRE) {
-							int[] fire = {rotate[0], position[0]};
-							System.err.printf("rota:%d, pos:%d, Score:%d\n", rotate[0], position[0], nowScore);
-							return fire;
-						}
-    				}
-    			}
-    		}
-    		return null;
-    	}
-    	
-    	public int[][] simulateTwo() {
-    		bestWay = 0;
-    		int simulateTimes = 2;
-    		int[][] way = new int[2][SIZE];
-    		int maxScore = 0;
-    		int nowScore = 0;
-    		int[] rotate;
-    		int[] position;
-    		int[][] best = new int[2][simulateTimes];
-    		int[][] insurance = new int[2][simulateTimes];
-    		for (int i = 0; i < (int)Math.pow(7, simulateTimes); i++) {
-    			position = shinsu(i, 8, simulateTimes);
-    			
-    			for (int j = 0; j < (int)Math.pow(4, simulateTimes); j++) {
-    				rotate = shinsu(j, 4, simulateTimes);
-    				Board b = (Board) this.board.clone();
-    				int ojama = this.obstacle;
-    				nowScore = 0;
-    				
-    				for (int k = 0; k < simulateTimes; k++ ) {
-    					Pack nowPack = (Pack)this.packs[k].clone();
-    					if (ojama > 0) {
-    						ojama = nowPack.fillObstaclePack(ojama);
-    					}
-    					nowPack.packRotate(rotate[k]);
-    					b.setPack(nowPack, position[k]);
-    					int[] block = b.howManyChain();
-    					nowScore = score(block);
-    					if (b.dangerZone()) {
-    						break;
-    					}
-    					
-						/*if (nowScore > FIRE && k == 0) {
-							int[][] fire = {{rotate[0]}, {position[0]}};
-							System.err.printf("rota:%d, pos:%d, Score:%d\n", rotate[0], position[0], nowScore);
-							debugArray(block);
-							return fire;
-						}*/
-						
-						if (k < simulateTimes - 1)
-							continue;
-					
-    					if (nowScore > maxScore) {
-    						bestWay = 0;
-    						way = new int[2][SIZE];
-    						maxScore = nowScore;
-    						best[0] = Arrays.copyOf(rotate, rotate.length);
-    						best[1] = Arrays.copyOf(position, position.length);
-    					}
-    					
-    					if (nowScore == maxScore) {
-    						way[0][bestWay] = rotate[0];
-    						way[1][bestWay] = position[0];
-    						bestWay ++;
-    					}
-    				}
-    			}
-    		}
-			return way;
-    	}
-    	
-    	public int[] simulate() {
-    		int addSimTime = 3;
-    		int[][] way = this.simulateTwo();
-    		int maxScore = 0;
-    		int nowScore = 0;
-    		int[] rotate;
-    		int[] position;
-    		boolean insuranceFlag = true;
-    		int[] best = new int[2];
-    		int[] insurance = new int[2];
-    		int[] re = { way[0][0], way[1][0] };
-    		if (bestWay == 1)
-    			return re;
-    			
-    		for (int i = 0; i < bestWay; i++) {
-    			int ojama = this.obstacle;
-    			Board b = (Board) this.board.clone();
-    			Pack p = (Pack) this.packs[0].clone();
-    			if (ojama > 0)
-    				p.fillObstaclePack(ojama);
-    			p.packRotate(way[0][i]);
-    			b.setPack(p, way[1][i]);
-    			b.howManyChain();
-    			for (int j = 0; j < (int)Math.pow(8, addSimTime); j++) {
-        			position = shinsu(j, 8, addSimTime);
-        			
-        			for (int k = 0; k < (int)Math.pow(4, addSimTime); k++) {
-        				rotate = shinsu(k, 4, addSimTime);
-        				Board nowBoard = (Board) b.clone();
-        				nowScore = 0;
-        				for (int l = 0; l < addSimTime; l++) {
-        					Pack nowPack = (Pack)this.packs[l + 1].clone();
-        					if (ojama > 0) {
-        						ojama = nowPack.fillObstaclePack(ojama);
-        					}
-        					nowPack.packRotate(rotate[l]);
-        					nowBoard.setPack(nowPack, position[l]);
-        					int[] block = nowBoard.howManyChain();
-        					nowScore = score(block);
-        					
-        					if (nowBoard.dangerZone()) {
-        						break;
-        					}
-        					
-    						if (l < addSimTime - 1)
-    							continue;
-    						
-    						if (insuranceFlag) {
-    							insurance[0] = way[0][i];
-        						insurance[1] = way[1][i];
-        						insuranceFlag = false;
-    						}
-    					
-        					if (nowScore > maxScore) {
-        						maxScore = nowScore;
-        						best[0] = way[0][i];
-        						best[1] = way[0][i];
-        					}
-        				}
-        				
-        			}
-    			}
-    		}
-    		if (maxScore <= 0)
-    			return insurance;
-    		return best;
-    	}
-    }
-    
     public class Node {
     	Board board;
     	int turn;
@@ -673,7 +496,7 @@ public class Main {
 
     	public void recountSeccess() {
     		for (Node pr = this; pr != null; pr = pr.parent) {
-    			if (pr.childCount == 0)
+    			if (pr.childCount == 0)  //if pr do not has children
     				continue;
     			pr.PlayOutCount = 0;
     			for (Node nd : pr.children) {
@@ -697,6 +520,10 @@ public class Main {
     		this.set[0] = a[0];
     		this.set[1] = a[1];
     	}
+    	
+    	public double getUCB() {
+    		return success + UCBCONSTANT * Math.sqrt(2.0 * Math.log(parent.PlayOutCount / PlayOutCount));
+    	}
     }
     
     public class MonteCarlo {
@@ -713,28 +540,33 @@ public class Main {
     	}
     	
     	public int[] playOutTree(int playOutCount, int nowTurn) {
-    		if (this.board.dangerZone())
+    		if (this.board.dangerZone()) {
+    			System.err.printf("danger\n");
     			return null;
+    		}
     		
     		while (root.PlayOutCount < playOutCount) {
-    			playOut(root, nowTurn);
+    			this.playOut(root, nowTurn);
     		}
     		
     		int maxCount = -1;
     		Node maxnd = null;
     		if (this.root.childCount > 0) {
     			for (Node nd : root.children) {
-    				if (nd == null) {
-    					if (nd.PlayOutCount > maxCount) {
-    						maxCount = nd.PlayOutCount;
-    						maxnd = nd;
-    					}
+    				if (nd == null)
+    					continue;
+    				double ucb = nd.getUCB();
+    				if (ucb > maxCount) {
+    					maxCount = nd.PlayOutCount;
+    					maxnd = nd;
     				}
     			}
     		}
     		
-    		if (maxnd == null)
+    		if (maxnd == null) {
+    			System.err.printf("maxnd == null\n");
     			return null;
+    		}
     		
     		return maxnd.set;
     	}
@@ -745,6 +577,7 @@ public class Main {
     				makeBranch(node, nowTurn);
     			} else {
     				double sc = simplePlayOut(node, nowTurn);
+    				node.addSuccess(sc);
     			}
     		} else {
     			Node bestNode = null;
@@ -754,8 +587,10 @@ public class Main {
     					continue;
     				if (max < node.children[i].success) {
     					max = node.children[i].success;
+    					bestNode = node.children[i];
     				}
     			}
+    			playOut(bestNode, turn + 1);
     		}
     	}
     	
@@ -767,7 +602,7 @@ public class Main {
     		for (int i = 0; i < SIMULATE_NUMBER; i++) {
     			int[] set = new int[2];
     			set[1] = i % ROT;
-    			set[0] = i - set[1];
+    			set[0] = i / 4;
     			nextTurn((Board)parent.board.clone(), nowTurn, set);
     			Node nd = new Node(parent, set, (Board) parent.board.clone());
     			parent.children[i] = nd;
@@ -775,6 +610,8 @@ public class Main {
     			double sr = simplePlayOut(nd, nowTurn + 1);
     			nd.addSuccess(sr);
     		}
+    		
+    		parent.childCount = SIMULATE_NUMBER;
     	}
     	
     	//do playOut one time
@@ -783,9 +620,7 @@ public class Main {
     		Pack p = null;
     		int pos = 0, rot = 0;
     		int[] block;
-    		int chain = 0;
     		for (int i = 0; i < MAX_SIMULATE; i++) {
-    			chain = 0;
     			block = null;
     			if (nowTurn + i > maxTurn)
     				break;
@@ -800,8 +635,7 @@ public class Main {
     			block = b.howManyChain();
     			if (b.dangerZone())
     				return 0.0;
-    			chain = chain(block);
-    			if (chain >= FINISH_PLAYOFF) 
+    			if (score(block) >= FINISH_PLAYOFF) 
     				return 1.0;
     		}
     		return 0.0;
@@ -864,15 +698,6 @@ public class Main {
                 col = best[1];
                 
                 println(col + " " + rot);
-                /*
-                if (best[0].length == 1) {
-                	packs[0].fillObstaclePack(my.obstacleNum);
-                	packs[0].packRotate(rot);
-                	my.setPack(packs[0], col);
-                	my.testHMC();
-                	my.showSimulateBoard();
-                }
-                */
             }
         }
     }
