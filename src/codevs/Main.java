@@ -12,12 +12,12 @@ public class Main {
         new Main().run();
     }
     
-    static final String AI_NAME = "AdditionalSimulate";
+    static final String AI_NAME = "Monte Carlo";
     static final int EMPTY = 0;
     static final int SIMTIME = 4;		//simulating time
     static final int MAXROTATE = 4;
-    static final int FIRE = 20;
-    static final int SIZE = 40;
+    static final int FIRE = 100;
+    static final int SIZE = 110;
     Random random = new Random();
     int turn = -1;
     Pack[] pack;
@@ -457,15 +457,12 @@ public class Main {
     		this.obstacle = obstacle;
     	}
     	
-    	public int[][] fire() {
+    	public int[] fire() {
     		int simulateTimes = 1;
-    		int maxScore = 0;
     		int nowScore = 0;
     		int[] rotate;
     		int[] position;
-    		int[][] best = new int[2][simulateTimes];
-    		int[][] insurance = new int[2][simulateTimes];
-    		for (int i = 0; i < (int)Math.pow(7, simulateTimes); i++) {
+    		for (int i = 0; i < (int)Math.pow(8, simulateTimes); i++) {
     			position = shinsu(i, 8, simulateTimes);
     			
     			for (int j = 0; j < (int)Math.pow(4, simulateTimes); j++) {
@@ -481,16 +478,15 @@ public class Main {
     					}
     					nowPack.packRotate(rotate[k]);
     					b.setPack(nowPack, position[k]);
-    					int[] block = b.howManyChain();
+    					nowScore = score(b.howManyChain());
     					
     					if (b.dangerZone()) {
     						break;
     					}
     					
-    					if (nowScore > FIRE && k == 0) {
-							int[][] fire = {{rotate[0]}, {position[0]}};
-							//System.err.printf("rota:%d, pos:%d, Score:%d\n", rotate[0], position[0], nowScore);
-							//debugArray(block);
+    					if (nowScore > FIRE) {
+							int[] fire = {rotate[0], position[0]};
+							System.err.printf("rota:%d, pos:%d, Score:%d\n", rotate[0], position[0], nowScore);
 							return fire;
 						}
     				}
@@ -500,9 +496,9 @@ public class Main {
     	}
     	
     	public int[][] simulateTwo() {
+    		bestWay = 0;
     		int simulateTimes = 2;
     		int[][] way = new int[2][SIZE];
-    		boolean insuranceFlag = true;
     		int maxScore = 0;
     		int nowScore = 0;
     		int[] rotate;
@@ -550,19 +546,17 @@ public class Main {
     					}
     					
     					if (nowScore == maxScore) {
-    						way[0][bestWay] = best[0][0];
-    						way[1][bestWay] = best[1][0];
+    						way[0][bestWay] = rotate[0];
+    						way[1][bestWay] = position[0];
     						bestWay ++;
     					}
     				}
     			}
     		}
-    		if (maxScore <= 0)
-    			return insurance;
 			return way;
     	}
     	
-    	public int[][] simulate() {
+    	public int[] simulate() {
     		int addSimTime = 3;
     		int[][] way = this.simulateTwo();
     		int maxScore = 0;
@@ -570,9 +564,12 @@ public class Main {
     		int[] rotate;
     		int[] position;
     		boolean insuranceFlag = true;
-    		int[][] best = new int[2][addSimTime];
-    		int[][] insurance = new int[2][addSimTime];
-    		
+    		int[] best = new int[2];
+    		int[] insurance = new int[2];
+    		int[] re = { way[0][0], way[1][0] };
+    		if (bestWay == 1)
+    			return re;
+    			
     		for (int i = 0; i < bestWay; i++) {
     			int ojama = this.obstacle;
     			Board b = (Board) this.board.clone();
@@ -594,35 +591,36 @@ public class Main {
         					if (ojama > 0) {
         						ojama = nowPack.fillObstaclePack(ojama);
         					}
-        					nowPack.packRotate(rotate[k]);
-        					b.setPack(nowPack, position[k]);
-        					int[] block = b.howManyChain();
+        					nowPack.packRotate(rotate[l]);
+        					nowBoard.setPack(nowPack, position[l]);
+        					int[] block = nowBoard.howManyChain();
         					nowScore = score(block);
         					
-        					if (b.dangerZone()) {
+        					if (nowBoard.dangerZone()) {
         						break;
         					}
         					
-    						if (k < addSimTime - 1)
+    						if (l < addSimTime - 1)
     							continue;
     						
     						if (insuranceFlag) {
-    							insurance[0] = Arrays.copyOf(rotate, rotate.length);
-        						insurance[1] = Arrays.copyOf(position, position.length);
+    							insurance[0] = way[0][i];
+        						insurance[1] = way[1][i];
         						insuranceFlag = false;
     						}
     					
         					if (nowScore > maxScore) {
         						maxScore = nowScore;
-        						best[0] = Arrays.copyOf(rotate, rotate.length);
-        						best[1] = Arrays.copyOf(position, position.length);
+        						best[0] = way[0][i];
+        						best[1] = way[0][i];
         					}
         				}
         				
         			}
     			}
     		}
-    		
+    		if (maxScore <= 0)
+    			return insurance;
     		return best;
     	}
     }
@@ -656,7 +654,7 @@ public class Main {
                 }
                 in.next();
            }
-           int[][] best = new int[2][SIMTIME];
+           int[] best = new int[2];
            while (true) {
                 turn = in.nextInt();
                 millitime = in.nextLong();
@@ -672,8 +670,8 @@ public class Main {
                 if (best == null)
                 	best = search.simulate();
 
-                rot = best[0][0];
-                col = best[1][0];
+                rot = best[0];
+                col = best[1];
                 
                 println(col + " " + rot);
                 /*
