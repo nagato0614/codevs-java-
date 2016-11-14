@@ -20,8 +20,9 @@ public class Main {
     static final int SIZE = 110;
     
     //MonteCarlo
-    static final int THRESHOLD = 10;
     static final int MAX_SIMULATE = 100;
+    static final int FINISH_PLAYOFF = 20;
+    
     
     Random random = new Random();
     int turn = -1;
@@ -632,6 +633,9 @@ public class Main {
     }
     
     public class Node {
+    	Board board;
+    	int turn;
+    	
     	Node parent = null;
     	Node children[] = null;
     	int childCount = 0;
@@ -643,26 +647,63 @@ public class Main {
     	double successCount = 0;
     	double success = 0.0;
     	
-    	public Node() {}
+    	public Node(Board board) {
+    		this.board = board;
+    	}
     	
-    	public Node(Node parent, int set[]) {
+    	public Node(Node parent, int set[], Board board) {
+    		this.board = board;
     		this.parent = parent;
     		this.parent.childCount++;
     		this.set = set;
     	}
+    	
+    	
     }
     
     public class MonteCarlo {
     	private Board board;
     	private int obstacle;
+    	Node root;
+    	int turn;
     	
-    	
-    	public MonteCarlo(Board b, int obstacle) {
+    	public MonteCarlo(Board b, int obstacle, int turn) {
     		this.board = b;
     		this.obstacle = obstacle;
+    		this.root = new Node((Board) this.board.clone());
+    		this.turn = turn;
     	}
     	
-    
+    	
+    	//do playOut one time
+    	private double simplePlayOut(Node node, int turn) {
+    		Board b = (Board) node.board.clone();
+    		Pack p = null;
+    		int pos = 0, rot = 0;
+    		int[] block;
+    		int chain = 0;
+    		for (int i = 0; i < MAX_SIMULATE; i++) {
+    			chain = 0;
+    			block = null;
+    			if (turn + i > maxTurn)
+    				break;
+    			//make next position and rotate
+    			pos = random.nextInt(8);
+    			rot = random.nextInt(4);
+    			
+    			p = (Pack) pack[turn + i].clone();
+    			b.obstacleNum = p.fillObstaclePack(b.obstacleNum);
+    			p.packRotate(rot);
+    			b.setPack(p, pos);
+    			block = b.howManyChain();
+    			if (b.dangerZone())
+    				return 0.0;
+    			chain = chain(block);
+    			if (chain >= FINISH_PLAYOFF) 
+    				return 1.0;
+    		}
+    		return 0.0;
+    	}
     }
     
     public int[] shinsu(int n, int shinsu, int length) {
