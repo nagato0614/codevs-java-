@@ -25,10 +25,10 @@ public class Main {
     
     //MonteCarlo
     static final int MAX_SIMULATE =	50;
-    static final int EXPANDCOUNT = 5;		//
+    static final int EXPANDCOUNT = 10;		//
     static final int SIMULATE_NUMBER = 32;
-    static final int FINISH_PLAYOFF = 100;	//score
-    static final int PLAYOUT_COUNT = 2500;	//do playout times
+    static final int FINISH_PLAYOUT = 50;	//score
+    static final int PLAYOUT_COUNT = 1000;	//do play out times
     
     
     Random random = new Random();
@@ -481,7 +481,7 @@ public class Main {
     	
     	public Node(Node parent, int set[], Board board) {
     		this.board = board;
-    		this.parent = parent;
+    		this.parent = parent;			
     		this.parent.childCount++;
     		this.set = set;
     	}
@@ -516,6 +516,10 @@ public class Main {
     		}
     	}
     	
+    	public int finishScore(int x) {
+    		return (int) (FINISH_PLAYOUT * Math.pow(1.3, x));
+    	}
+    	
     	public void set(int[] a) {
     		this.set[0] = a[0];
     		this.set[1] = a[1];
@@ -540,16 +544,12 @@ public class Main {
     	}
     	
     	public int[] playOutTree(int playOutCount, int nowTurn) {
-    		if (this.board.dangerZone()) {
-    			System.err.printf("danger\n");
-    			return null;
-    		}
     		
     		while (root.PlayOutCount < playOutCount) {
     			this.playOut(root, nowTurn);
     		}
     		
-    		int maxCount = -1;
+    		double maxCount = -1;
     		Node maxnd = null;
     		if (this.root.childCount > 0) {
     			for (Node nd : root.children) {
@@ -557,7 +557,7 @@ public class Main {
     					continue;
     				double ucb = nd.getUCB();
     				if (ucb > maxCount) {
-    					maxCount = nd.PlayOutCount;
+    					maxCount = ucb;
     					maxnd = nd;
     				}
     			}
@@ -585,8 +585,9 @@ public class Main {
     			for (int i = 0; i < node.children.length; i++) {
     				if (node.children[i] == null)
     					continue;
-    				if (max < node.children[i].success) {
-    					max = node.children[i].success;
+    				double ucb = node.children[i].getUCB();
+    				if (max < ucb) {
+    					max = ucb;
     					bestNode = node.children[i];
     				}
     			}
@@ -600,10 +601,11 @@ public class Main {
     		parent.PlayOutCount++;
     		
     		for (int i = 0; i < SIMULATE_NUMBER; i++) {
+    			Board b = (Board)parent.board.clone();
     			int[] set = new int[2];
     			set[1] = i % ROT;
     			set[0] = i / 4;
-    			nextTurn((Board)parent.board.clone(), nowTurn, set);
+    			nextTurn(b, nowTurn, set);
     			Node nd = new Node(parent, set, (Board) parent.board.clone());
     			parent.children[i] = nd;
     			
@@ -635,7 +637,7 @@ public class Main {
     			block = b.howManyChain();
     			if (b.dangerZone())
     				return 0.0;
-    			if (score(block) >= FINISH_PLAYOFF) 
+    			if (score(block) >= FINISH_PLAYOUT) 
     				return 1.0;
     		}
     		return 0.0;
@@ -694,8 +696,8 @@ public class Main {
                 MonteCarlo monte = new MonteCarlo((Board) my.clone(), my.obstacleNum, turn);
                 best = monte.playOutTree(PLAYOUT_COUNT, turn);
 
-                rot = best[0];
-                col = best[1];
+                col = best[0];
+                rot = best[1];
                 
                 println(col + " " + rot);
             }
