@@ -638,6 +638,7 @@ public class Main {
     	
     	double successSum = 0.0;
     	double successRate = 0.0;
+    	double ucb = 0.0;
     	
     	public Node (int[] s) {
     		if (s == null)
@@ -655,6 +656,16 @@ public class Main {
     				this.childCount++;
     			}
     		}
+    	}
+    	
+    	public int getBestUCB() {
+    		int max = 0;
+    		for (int i = 0; i < children.size(); i++) {
+    			if (children.get(i).ucb >= children.get(max).ucb) {
+    				max = i;
+    			}
+    		}
+    		return i;
     	}
     }
     
