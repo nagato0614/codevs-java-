@@ -650,7 +650,12 @@ public class Main {
     	}
     	
     	public void reloadSuccess() {
-    		
+    		double sum = 0;
+    		for (int i = 0; i < children.size(); i++) {
+    			sum += children.get(i).successSum;
+    		}
+    		this.successSum = sum;
+    		this.successRate = sum / (double)this.playCount;
     	}
     	
     	public void addChild(int turn) {
