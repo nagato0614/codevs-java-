@@ -2,6 +2,7 @@ package codevs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Random;
 import java.util.Scanner;
 import java.lang.Math;
@@ -21,11 +22,14 @@ public class Main {
     static final int SIZE = 110;
     static final double K = 0.5;		//UCB constant
     static final int MAX_PLAYOUT = 1000;
-    static final int SUCCESS_SCORE = 10;
+    static final int SUCCESS_SCORE = 50;
     static final double FAIL = 0.0;
     static final double SUCCESS = 1.0;
     static final int THRESHOLD = 10;
+    static final int ALL = MAXPOSITION * MAXROTATE;
     
+    int[][] SET;
+    ArrayList<Integer> sample;
     Random random = new Random();
     int turn = -1;
     Pack[] pack;
@@ -350,7 +354,12 @@ public class Main {
     		nodeCount++;
     	}
     	
-    	public void allRelod() {
+    	public void update() {
+    		double sum = 0;
+    		for (int i = 0; i < this.children.size(); i++) {
+    			sum += children.get(i).successRate;
+    		}
+    		this.successRate = sum / this.playCount;
     	}
     	
     	public void updateSuccess(double win) {
@@ -412,21 +421,26 @@ public class Main {
     		this.board = b;
     	}
     	
-    	public double searchUCT(Board b, Node parent) {
+    	public void searchUCT(Board b, Node parent) {
     		double win = 0;
     		Node bestChild = parent.children.get(parent.getBestUcbIndex());
     		if (bestChild.children != null) {
-    			win = searchUCT((Board)b.clone(), bestChild);
+    			Pack p = (Pack) pack[bestChild.turn].clone();
+    			b.obstacleNum = p.fillObstaclePack(b.obstacleNum);
+    			p.packRotate(bestChild.set[1]);
+    			b.setPack(p, bestChild.set[0]);
+    			b.howManyChain();
+    			searchUCT((Board)b.clone(), bestChild);
     		} else {
     			win = onePlayout((Board)b.clone(), bestChild);
+    			bestChild.updateSuccess(win);
     		}
     		
     		//growth tree
     		if (bestChild.playCount >= THRESHOLD)
     			bestChild.addChild();
-    		bestChild.updateSuccess(win);
+    		parent.update();
     		parent.playCount++;
-    		return win;
     	}
     	
     	//main
@@ -436,6 +450,7 @@ public class Main {
     		for (int i = 0; i < MAX_PLAYOUT; i++) {
     			b = (Board) this.board.clone();
     			this.searchUCT(b, root);
+    			root.update();
     		}
     		int max = root.getBestUcbIndex();
     		
@@ -446,21 +461,34 @@ public class Main {
     	
     	public double onePlayout(Board board, Node n) {
     		int t = turn;
-    		Board b = board;
+    		Board bo = board;
+    		Board buf = null;
     		n.playCount++;
-    		while (true) { 
-    			int rot = random.nextInt(MAXROTATE);
-    			int pos = random.nextInt(MAXPOSITION);
-    			Pack p = (Pack) pack[n.turn].clone();
-    			b.obstacleNum = p.fillObstaclePack(b.obstacleNum);
-    			p.packRotate(rot);
-    			b.setPack(p, pos);
-    			int[] block =  b.howManyChain();
-    			if (b.dangerZone())
-    				return FAIL;
+    		int turn = n.turn;
+    		int[] block = null;
+    		while (true) {
+    			Collections.shuffle(sample);
+    			for (int i = 0; i < ALL; i++) {
+    				buf = (Board) bo.clone();
+    				Pack p = (Pack) pack[turn].clone();
+    				buf.obstacleNum = p.fillObstaclePack(buf.obstacleNum);
+    				p.packRotate(SET[sample.get(i)][1]);
+    				buf.setPack(p, SET[sample.get(i)][0]);
+    				block =  buf.howManyChain();
+    				if (!buf.dangerZone()) {
+    					break;
+    				} else {
+    					if (i < ALL - 1)
+    						continue;
+    					else 
+    						return FAIL;
+    				}
+    			}
+    			turn++;
+    			bo = buf;
     			if (score(block) >= SUCCESS_SCORE)
     				return SUCCESS;
-    			if (t > maxTurn)
+    			if (turn >= maxTurn)
     				return FAIL;
     		}
     	}
@@ -496,6 +524,17 @@ public class Main {
                 in.next();
            }
            int[] best = new int[2];
+           sample = new ArrayList<Integer>();
+           SET = new int[ALL][2];
+           for (int i = 0; i < MAXPOSITION * MAXROTATE; i++) {
+        	   sample.add(i);
+        	   for (int j = 0; j < MAXPOSITION; j++) {
+        		   SET[i][0] = j;
+        	   }
+        	   for (int j = 0; j < MAXROTATE; j++) {
+        		   SET[i][1] = j;
+        	   }
+           }
            while (true) {
                 turn = in.nextInt();
                 millitime = in.nextLong();
@@ -509,8 +548,8 @@ public class Main {
                 MonteCarlo monte = new MonteCarlo((Board)my.clone(), turn);
                 best = monte.getBest();
 
-                rot = best[0];
-                col = best[1];
+                rot = best[1];
+                col = best[0];
                 
                 println(col + " " + rot);
             }
