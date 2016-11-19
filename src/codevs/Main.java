@@ -634,7 +634,7 @@ public class Main {
     	
     	int[] set = null; 	//set[0] = pos, set[1] = rot
     	
-    	int playCount = 0;	
+    	int playCount = 0;
     	
     	double successSum = 0.0;
     	double successRate = 0.0;
@@ -665,7 +665,7 @@ public class Main {
     				max = i;
     			}
     		}
-    		return i;
+    		return max;
     	}
     }
     
