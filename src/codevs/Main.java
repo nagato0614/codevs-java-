@@ -16,6 +16,7 @@ public class Main {
     static final int EMPTY = 0;
     static final int SIMTIME = 4;		//simulating time
     static final int MAXROTATE = 4;
+    static final int MAXPOSITION = 8;
     static final int FIRE = 100;
     static final int SIZE = 110;
     Random random = new Random();
@@ -632,10 +633,25 @@ public class Main {
     	
     	int[] set = null; 	//set[0] = pos, set[1] = rot
     	
-    	int playCount = 0;
+    	int playCount = 0;	
     	
     	double successSum = 0.0;
-    	double success = 0.0;
+    	double successRate = 0.0;
+    	
+    	public Node (int[] s) {
+    		this.set = s;
+    	}
+    	
+    	public void addChild() {
+    		this.children = new ArrayList<Node>(0);
+    		for (int i = 0; i < MAXPOSITION; i++) {
+    			for (int j = 0; j < MAXROTATE; j++) {
+    				int[] s = {i, j};
+    				this.children.add(new Node(s));
+    				this.childCount++;
+    			}
+    		}
+    	}
     }
     
     public int[] shinsu(int n, int shinsu, int length) {
