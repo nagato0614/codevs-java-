@@ -19,6 +19,7 @@ public class Main {
     static final int MAXPOSITION = 8;
     static final int FIRE = 100;
     static final int SIZE = 110;
+    static final double K = 0.5;		//UCB constant
     Random random = new Random();
     int turn = -1;
     Pack[] pack;
@@ -661,6 +662,7 @@ public class Main {
     	public int getBestUCB() {
     		int max = 0;
     		for (int i = 0; i < children.size(); i++) {
+    			
     			if (children.get(i).ucb >= children.get(max).ucb) {
     				max = i;
     			}
