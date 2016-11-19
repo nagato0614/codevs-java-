@@ -29,6 +29,7 @@ public class Main {
     int obstacle;
     int maxTurn;
     long millitime;
+    int nodeCount = 0;
     
     Board my;
     Board op;
@@ -639,7 +640,10 @@ public class Main {
     	double successRate = 0.0;
     	
     	public Node (int[] s) {
+    		if (s == null)
+    			nodeCount = 0;
     		this.set = s;
+    		nodeCount++;
     	}
     	
     	public void addChild() {
