@@ -673,10 +673,8 @@ public class Main {
                 for (int i = 0; i < SIMTIME; i++) {
                 	packs[i] = (Pack) pack[turn + i].clone();
                 }
-                AdditionalSimulate search = new AdditionalSimulate(packs, my, my.obstacleNum);
-                best = search.fire();
-                if (best == null)
-                	best = search.simulate();
+                MonteCarlo monte = new MonteCarlo((Board)my.clone(), turn);
+                best = monte.getBest();
 
                 rot = best[0];
                 col = best[1];
