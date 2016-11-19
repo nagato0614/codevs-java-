@@ -20,6 +20,11 @@ public class Main {
     static final int FIRE = 100;
     static final int SIZE = 110;
     static final double K = 0.5;		//UCB constant
+    static final int MAX_PLAYOUT = 1000;
+    static final int SUCCESS_SCORE = 150;
+    static final double FAIL = 0.0;
+    static final double SUCCESS = 1.0;
+    
     Random random = new Random();
     int turn = -1;
     Pack[] pack;
@@ -697,6 +702,26 @@ public class Main {
     	public MonteCarlo(Board b, int turn) {
     		this.root = new Node(null, turn);
     		this.board = b;
+    	}
+    	
+    	public double onePlayout(Board board, Node n, int turn) {
+    		int t = turn;
+    		Board b = board;
+    		while (true) { 
+    			int rot = random.nextInt(MAXROTATE);
+    			int pos = random.nextInt(MAXPOSITION);
+    			Pack p = (Pack) pack[t++].clone();
+    			b.obstacleNum = p.fillObstaclePack(b.obstacleNum);
+    			p.packRotate(rot);
+    			b.setPack(p, pos);
+    			int[] block =  b.howManyChain();
+    			if (b.dangerZone())
+    				return FAIL;
+    			if (score(block) >= SUCCESS_SCORE)
+    				return SUCCESS;
+    			if (t > maxTurn)
+    				return FAIL;
+    		}
     	}
     }
     
