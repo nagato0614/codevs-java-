@@ -534,12 +534,12 @@ public class Main {
     		this.successRate = sum / (double)this.playCount;
     	}
     	
-    	public void addChild(int turn) {
+    	public void addChild() {
     		this.children = new ArrayList<Node>(0);
     		for (int i = 0; i < MAXPOSITION; i++) {
     			for (int j = 0; j < MAXROTATE; j++) {
     				int[] s = {i, j};
-    				this.children.add(new Node(s, turn + 1));
+    				this.children.add(new Node(s, this.turn + 1));
     				this.childCount++;
     			}
     		}
@@ -573,6 +573,23 @@ public class Main {
     	public MonteCarlo(Board b, int turn) {
     		this.root = new Node(null, turn);
     		this.board = b;
+    	}
+    	
+    	public void searchUCT(Board b, Node parent) {
+    		
+    	}
+    	
+    	//main
+    	public int[] getBest() {
+    		Board b;
+    		root.addChild();
+    		for (int i = 0; i < MAX_PLAYOUT; i++) {
+    			b = (Board) this.board.clone();
+    			this.searchUCT(b, root);
+    		}
+    		int max = root.getBestUCB();
+    		
+    		return root.children.get(max).set;
     	}
     	
     	public double onePlayout(Board board, Node n, int turn) {
