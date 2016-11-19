@@ -12,7 +12,7 @@ public class Main {
         new Main().run();
     }
     
-    static final String AI_NAME = "Monte Carlo";
+    static final String AI_NAME = "Monte_Carlo";
     static final int EMPTY = 0;
     static final int SIMTIME = 4;		//simulating time
     static final int MAXROTATE = 4;
@@ -623,6 +623,19 @@ public class Main {
     			return insurance;
     		return best;
     	}
+    }
+    
+    public class Node {
+    	Node parent = null;
+    	ArrayList<Node> children = null;
+    	int childCount = 0;
+    	
+    	int[] set = null; 	//set[0] = pos, set[1] = rot
+    	
+    	int playCount = 0;
+    	
+    	double successSum = 0.0;
+    	double success = 0.0;
     }
     
     public int[] shinsu(int n, int shinsu, int length) {
