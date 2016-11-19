@@ -22,10 +22,10 @@ public class Main {
     static final int SIZE = 110;
     static final double K = 0.5;		//UCB constant
     static final int MAX_PLAYOUT = 1000;
-    static final int SUCCESS_SCORE = 50;
+    static final int SUCCESS_SCORE = 1;
     static final double FAIL = 0.0;
     static final double SUCCESS = 1.0;
-    static final int THRESHOLD = 10;
+    static final int THRESHOLD = 5;
     static final int ALL = MAXPOSITION * MAXROTATE;
     
     int[][] SET;
@@ -334,11 +334,8 @@ public class Main {
     	Node parent = null;
     	ArrayList<Node> children = null;
     	int childCount = 0;
-    	
     	int[] set = null; 	//set[0] = pos, set[1] = rot
-    	
     	int playCount;
-    	
     	//double successSum = 0.0;
     	double successRate = 0.0;
     	double ucb = 0.0;
@@ -347,18 +344,19 @@ public class Main {
     		this.parent = parent;
     		this.turn = turn;
     		this.playCount = 0;
-    		
-    		if (s == null)
-    			nodeCount = 0;
     		this.set = s;
     		nodeCount++;
     	}
     	
     	public void update() {
     		double sum = 0;
+    		int play = 0;
     		for (int i = 0; i < this.children.size(); i++) {
-    			sum += children.get(i).successRate;
+    			Node c = children.get(i);
+    			play += c.playCount;
+    			sum += c.successRate;
     		}
+    		this.playCount = play;
     		this.successRate = sum / this.playCount;
     	}
     	
@@ -367,7 +365,7 @@ public class Main {
     	}
     	
     	public void addChild() {
-    		this.children = new ArrayList<Node>(0);
+    		this.children = new ArrayList<Node>();
     		for (int i = 0; i < MAXPOSITION; i++) {
     			for (int j = 0; j < MAXROTATE; j++) {
     				int[] s = {i, j};
@@ -379,10 +377,10 @@ public class Main {
     	
     	public void calcUCB() {
     		if (this.playCount == 0) {
-    			this.ucb = random.nextDouble();
+    			this.ucb = 100.0 + random.nextDouble();
     		} else {
     			this.ucb = this.successRate 
-    					+ K * Math.sqrt(Math.log((double)this.parent.playCount) * 2 / (double)this.playCount);
+    					+ K * Math.sqrt((Math.log((double)this.parent.playCount) * 2) / (double)this.playCount);
     		}
     	}
     	
@@ -424,33 +422,35 @@ public class Main {
     	public void searchUCT(Board b, Node parent) {
     		double win = 0;
     		Node bestChild = parent.children.get(parent.getBestUcbIndex());
+			Pack p = (Pack) pack[bestChild.turn].clone();
+			b.obstacleNum = p.fillObstaclePack(b.obstacleNum);
+			p.packRotate(bestChild.set[1]);
+			b.setPack(p, bestChild.set[0]);
+			b.howManyChain();
     		if (bestChild.children != null) {
-    			Pack p = (Pack) pack[bestChild.turn].clone();
-    			b.obstacleNum = p.fillObstaclePack(b.obstacleNum);
-    			p.packRotate(bestChild.set[1]);
-    			b.setPack(p, bestChild.set[0]);
-    			b.howManyChain();
     			searchUCT((Board)b.clone(), bestChild);
     		} else {
-    			win = onePlayout((Board)b.clone(), bestChild);
-    			bestChild.updateSuccess(win);
+    			if (bestChild.playCount <= THRESHOLD) {
+    				onePlayout((Board) b.clone(), bestChild);
+    			} else {
+    				if (bestChild.children == null)
+    					bestChild.addChild();
+    				searchUCT((Board) b.clone(), bestChild);
+    			}
     		}
-    		
-    		//growth tree
-    		if (bestChild.playCount >= THRESHOLD)
-    			bestChild.addChild();
+
     		parent.update();
     		parent.playCount++;
     	}
     	
     	//main
     	public int[] getBest() {
+    		nodeCount = 0;
     		Board b;
     		root.addChild();
     		for (int i = 0; i < MAX_PLAYOUT; i++) {
     			b = (Board) this.board.clone();
     			this.searchUCT(b, root);
-    			root.update();
     		}
     		int max = root.getBestUcbIndex();
     		
@@ -460,11 +460,10 @@ public class Main {
     	}
     	
     	public double onePlayout(Board board, Node n) {
-    		int t = turn;
     		Board bo = board;
     		Board buf = null;
     		n.playCount++;
-    		int turn = n.turn;
+    		int turn = n.turn + 1;
     		int[] block = null;
     		while (true) {
     			Collections.shuffle(sample);
@@ -524,27 +523,13 @@ public class Main {
                 in.next();
            }
            int[] best = new int[2];
-           sample = new ArrayList<Integer>();
-           SET = new int[ALL][2];
-           for (int i = 0; i < MAXPOSITION * MAXROTATE; i++) {
-        	   sample.add(i);
-        	   for (int j = 0; j < MAXPOSITION; j++) {
-        		   SET[i][0] = j;
-        	   }
-        	   for (int j = 0; j < MAXROTATE; j++) {
-        		   SET[i][1] = j;
-        	   }
-           }
+           makeSample();
            while (true) {
                 turn = in.nextInt();
                 millitime = in.nextLong();
                 my = new Board(width, height, in);
                 op = new Board(width, height, in);
                 int col = 0, rot = 0;
-                Pack[] packs = new Pack[SIMTIME];
-                for (int i = 0; i < SIMTIME; i++) {
-                	packs[i] = (Pack) pack[turn + i].clone();
-                }
                 MonteCarlo monte = new MonteCarlo((Board)my.clone(), turn);
                 best = monte.getBest();
 
@@ -553,6 +538,20 @@ public class Main {
                 
                 println(col + " " + rot);
             }
+        }
+    }
+    
+    void makeSample() {
+        sample = new ArrayList<Integer>();
+        SET = new int[ALL][2];
+        for (int i = 0; i < MAXPOSITION * MAXROTATE; i++) {
+     	   sample.add(i);
+     	   for (int j = 0; j < MAXPOSITION; j++) {
+     		   SET[i][0] = j;
+     	   }
+     	   for (int j = 0; j < MAXROTATE; j++) {
+     		   SET[i][1] = j;
+     	   }
         }
     }
     
