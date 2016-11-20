@@ -22,7 +22,7 @@ public class Main {
     static final int SIZE = 110;
     static final double K = 0.5;		//UCB constant
     static final int MAX_PLAYOUT = 1000;
-    static final int SUCCESS_SCORE = 1;
+    static final int SUCCESS_SCORE = 5;
     static final double FAIL = 0.0;
     static final double SUCCESS = 1.0;
     static final int THRESHOLD = 5;
@@ -421,17 +421,34 @@ public class Main {
     	
     	public void searchUCT(Board b, Node parent) {
     		double win = 0;
-    		Node bestChild = parent.children.get(parent.getBestUcbIndex());
-			Pack p = (Pack) pack[bestChild.turn].clone();
-			b.obstacleNum = p.fillObstaclePack(b.obstacleNum);
-			p.packRotate(bestChild.set[1]);
-			b.setPack(p, bestChild.set[0]);
-			b.howManyChain();
+    		Node bestChild = null;
+    		
+    		for (int i = 0; i < ALL; i++) {
+    			int index = parent.getBestUcbIndex();
+    			try {
+    				bestChild = parent.children.get(index);
+    			} catch (IndexOutOfBoundsException e) {
+    				println("0 0");  //lose
+    			}
+    			Pack p = (Pack)pack[bestChild.turn].clone();
+    			Board bo = (Board) b.clone();
+    			bo.obstacleNum = p.fillObstaclePack(bo.obstacleNum);
+    			p.packRotate(bestChild.set[1]);
+    			bo.setPack(p, bestChild.set[0]);
+    			bo.howManyChain();
+    			if (bo.dangerZone()) {
+    				parent.children.remove(index);
+    			} else {
+    				break;
+    			}
+    		}
+    		
     		if (bestChild.children != null) {
     			searchUCT((Board)b.clone(), bestChild);
     		} else {
     			if (bestChild.playCount <= THRESHOLD) {
-    				onePlayout((Board) b.clone(), bestChild);
+    				win = onePlayout((Board) b.clone(), bestChild);
+    				bestChild.updateSuccess(win);
     			} else {
     				if (bestChild.children == null)
     					bestChild.addChild();
@@ -440,7 +457,6 @@ public class Main {
     		}
 
     		parent.update();
-    		parent.playCount++;
     	}
     	
     	//main
@@ -463,7 +479,7 @@ public class Main {
     		Board bo = board;
     		Board buf = null;
     		n.playCount++;
-    		int turn = n.turn + 1;
+    		int turn = n.turn;
     		int[] block = null;
     		while (true) {
     			Collections.shuffle(sample);
