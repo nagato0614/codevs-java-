@@ -20,12 +20,12 @@ public class Main {
     static final int MAXPOSITION = 8;
     static final int FIRE = 100;
     static final int SIZE = 110;
-    static final double K = 0.5;		//UCB constant
-    static final int MAX_PLAYOUT = 1000;
+    static final double K = 0.1;		//UCB constant
+    static final int MAX_PLAYOUT = 5000;
     static final int SUCCESS_SCORE = 5;
     static final double FAIL = 0.0;
     static final double SUCCESS = 1.0;
-    static final int THRESHOLD = 5;
+    static final int THRESHOLD = 200;
     static final int ALL = MAXPOSITION * MAXROTATE;
     
     int[][] SET;
@@ -41,6 +41,7 @@ public class Main {
     int maxTurn;
     long millitime;
     int nodeCount = 0;
+    int maxDeep = -1;
     
     Board my;
     Board op;
@@ -340,12 +341,19 @@ public class Main {
     	double successRate = 0.0;
     	double ucb = 0.0;
     	int turn;
-    	public Node (Node parent, int[] s, int turn) {
+    	int deep;
+    	int id;
+    	
+    	public Node (Node parent, int[] s, int nowTurn, int deep) {
     		this.parent = parent;
-    		this.turn = turn;
+    		this.turn = nowTurn;
     		this.playCount = 0;
     		this.set = s;
-    		nodeCount++;
+    		this.deep = deep;
+    		if (this.deep > maxDeep) {
+    			maxDeep = this.deep;
+    		}
+    		this.id = nodeCount++;
     	}
     	
     	public void update() {
@@ -357,7 +365,7 @@ public class Main {
     			sum += c.successRate;
     		}
     		this.playCount = play;
-    		this.successRate = sum / this.playCount;
+    		this.successRate = sum / this.children.size();
     	}
     	
     	public void updateSuccess(double win) {
@@ -369,7 +377,7 @@ public class Main {
     		for (int i = 0; i < MAXPOSITION; i++) {
     			for (int j = 0; j < MAXROTATE; j++) {
     				int[] s = {i, j};
-    				this.children.add(new Node(this, s, this.turn + 1));
+    				this.children.add(new Node(this, s, this.turn + 1, this.deep + 1));
     				this.childCount++;
     			}
     		}
@@ -380,7 +388,7 @@ public class Main {
     			this.ucb = 100.0 + random.nextDouble();
     		} else {
     			this.ucb = this.successRate 
-    					+ K * Math.sqrt((Math.log((double)this.parent.playCount) * 2) / (double)this.playCount);
+    					+ K * Math.sqrt((Math.log((double)this.parent.playCount) * 2.0) / (double)this.playCount);
     		}
     	}
     	
@@ -388,7 +396,7 @@ public class Main {
     		int max = 0;
     		for (int i = 0; i < children.size(); i++) {
     			children.get(i).calcUCB();
-    			if (children.get(i).ucb >= children.get(max).ucb) {
+    			if (children.get(i).ucb > children.get(max).ucb) {
     				max = i;
     			}
     		}
@@ -396,33 +404,35 @@ public class Main {
     	}
     	
     	public void showNodeData() {
-    		System.err.printf("best_ucb : %f, rate : %f, games : %d, playout : %d, node : %d\n",
-    				children.get(this.getBestUcbIndex()).ucb, this.successRate, children.get(this.getBestUcbIndex()).playCount,
+    		System.err.printf("id : %d, best_ucb : %f, rate : %f, games : %d, playout : %d, node : %d\n",
+    				this.id, children.get(this.getBestUcbIndex()).ucb, this.successRate, 
+    				children.get(this.getBestUcbIndex()).playCount,
     				this.playCount, nodeCount);
     	}
     	
     	public void showAllChildren() {
     		for (int i = 0; i < this.children.size(); i++) {
     			Node c = this.children.get(i);
-    			System.err.printf("set : {%d, %d}, rate : %f, playout : %3d, ucb : %f\n",
-    					c.set[0], c.set[1], c.successRate, c.playCount, c.ucb);
+    			System.err.printf("id : %d, set : {%d, %d}, rate : %f, playout : %3d, ucb : %f, children : %d\n",
+    					c.id, c.set[0], c.set[1], c.successRate, c.playCount, c.ucb, c.childCount);
     		}
     	}
     }
     
     public class MonteCarlo {
     	private Node root;
-    	private Board board;
+    	private Board board;		//now board
     	
-    	public MonteCarlo(Board b, int turn) {
-    		this.root = new Node(null, null, turn - 1);
+    	public MonteCarlo(Board b, int nowTurn) {
+    		maxDeep = -1;
+    		this.root = new Node(null, null, nowTurn - 1, 0);
     		this.board = b;
     	}
     	
     	public void searchUCT(Board b, Node parent) {
     		double win = 0;
     		Node bestChild = null;
-    		
+    		Board nextBoard = null;
     		for (int i = 0; i < ALL; i++) {
     			int index = parent.getBestUcbIndex();
     			try {
@@ -431,12 +441,12 @@ public class Main {
     				println("0 0");  //lose
     			}
     			Pack p = (Pack)pack[bestChild.turn].clone();
-    			Board bo = (Board) b.clone();
-    			bo.obstacleNum = p.fillObstaclePack(bo.obstacleNum);
+    			nextBoard = (Board) b.clone();
+    			nextBoard.obstacleNum = p.fillObstaclePack(nextBoard.obstacleNum);
     			p.packRotate(bestChild.set[1]);
-    			bo.setPack(p, bestChild.set[0]);
-    			bo.howManyChain();
-    			if (bo.dangerZone()) {
+    			nextBoard.setPack(p, bestChild.set[0]);
+    			nextBoard.howManyChain();
+    			if (nextBoard.dangerZone()) {
     				parent.children.remove(index);
     			} else {
     				break;
@@ -444,18 +454,17 @@ public class Main {
     		}
     		
     		if (bestChild.children != null) {
-    			searchUCT((Board)b.clone(), bestChild);
+    			searchUCT((Board)nextBoard.clone(), bestChild);
     		} else {
     			if (bestChild.playCount <= THRESHOLD) {
-    				win = onePlayout((Board) b.clone(), bestChild);
-    				bestChild.updateSuccess(win);
+    				bestChild.updateSuccess(onePlayout((Board) nextBoard.clone(), bestChild));
     			} else {
-    				if (bestChild.children == null)
-    					bestChild.addChild();
-    				searchUCT((Board) b.clone(), bestChild);
+    				bestChild.addChild();
+    				bestChild.showNodeData();
+    				searchUCT((Board) nextBoard.clone(), bestChild);
     			}
     		}
-
+    		//parent.playCount++;
     		parent.update();
     	}
     	
@@ -470,8 +479,10 @@ public class Main {
     		}
     		int max = root.getBestUcbIndex();
     		
+    		System.err.println(turn);
     		root.showAllChildren();
     		root.showNodeData();
+    		System.err.printf("deep : %d\n", maxDeep);
     		return root.children.get(max).set;
     	}
     	
@@ -479,13 +490,13 @@ public class Main {
     		Board bo = board;
     		Board buf = null;
     		n.playCount++;
-    		int turn = n.turn;
+    		int nowTurn = n.turn;
     		int[] block = null;
     		while (true) {
     			Collections.shuffle(sample);
     			for (int i = 0; i < ALL; i++) {
     				buf = (Board) bo.clone();
-    				Pack p = (Pack) pack[turn].clone();
+    				Pack p = (Pack) pack[nowTurn].clone();
     				buf.obstacleNum = p.fillObstaclePack(buf.obstacleNum);
     				p.packRotate(SET[sample.get(i)][1]);
     				buf.setPack(p, SET[sample.get(i)][0]);
@@ -499,10 +510,14 @@ public class Main {
     						return FAIL;
     				}
     			}
-    			turn++;
+    			nowTurn++;
     			bo = buf;
-    			if (score(block) >= SUCCESS_SCORE)
-    				return SUCCESS;
+    			int score = score(block);
+    			if (score >= SUCCESS_SCORE * n.deep) {
+//    				System.err.printf("nowTurn : %3d, successTurn : %3d, deep : %3d, score : %3d\n",
+//    						turn, nowTurn, n.deep, score);
+    				return ((double)score / (double)(nowTurn - n.turn));
+    			}
     			if (turn >= maxTurn)
     				return FAIL;
     		}
