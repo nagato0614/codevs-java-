@@ -20,8 +20,8 @@ public class Main {
     static final int MAXPOSITION = 8;
     static final int FIRE = 100;
     static final int SIZE = 110;
-    static final double K = 0.05;		//UCB constant
-    static final int MAX_PLAYOUT = 5000;
+    static final double K = 0.1;		//UCB constant
+    static final int MAX_PLAYOUT = 10000;
     static final int MAX_USE_PACKS = 5;
     static final int SUCCESS_SCORE = 5;
     static final double FAIL = 0.0;
@@ -514,7 +514,11 @@ public class Main {
     				p.packRotate(SET[sample.get(i)][1]);
     				buf.setPack(p, SET[sample.get(i)][0]);
     				block =  buf.howManyChain();
+
     				if (!buf.dangerZone()) {
+        				if (t < MAX_USE_PACKS - 1 && score(block) > 0) {
+        					return FAIL;
+        				}
     					continue;
     				} else {
     					return FAIL;
