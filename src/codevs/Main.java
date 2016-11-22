@@ -18,15 +18,15 @@ public class Main {
     static final int SIMTIME = 4;		//simulating time
     static final int MAXROTATE = 4;
     static final int MAXPOSITION = 8;
-    static final int FIRE = 100;
+    static final int FIRE = 150;
     static final int SIZE = 110;
     static final double K = 0.1;		//UCB constant
     static final int MAX_PLAYOUT = 10000;
-    static final int MAX_USE_PACKS = 5;
-    static final int SUCCESS_SCORE = 5;
+    static final int MAX_USE_PACKS = 3;
+    static final int SUCCESS_SCORE = 0;
     static final double FAIL = 0.0;
-    static final double SUCCESS = 1.0;
-    static final int THRESHOLD = 50;
+    static final double SUCCESS = 1000000;
+    static final int THRESHOLD = 150;
     static final int ALL = MAXPOSITION * MAXROTATE;
     
     int[][] SET;
@@ -36,13 +36,14 @@ public class Main {
     Pack[] pack;
     int width;
     int height;
-    int packSize;
+    int packSize = 3;
     int summation;
     int obstacle;
     int maxTurn;
     long millitime;
     int nodeCount = 0;
     int maxDeep = -1;
+    int maxScore = 0;
     
     Board my;
     Board op;
@@ -286,7 +287,7 @@ public class Main {
     }
     
     class Pack implements Cloneable {
-    	int[][] pack = new int[width][height];
+    	int[][] pack = new int[packSize][packSize];
     	
     	public void packRotate(int rot) {
     		for (int i = 0; i < rot; i++) {
@@ -344,6 +345,7 @@ public class Main {
     	int turn;
     	int deep;
     	int id;
+    	boolean isChain;
     	
     	public Node (Node parent, int[] s, int nowTurn, int deep) {
     		this.parent = parent;
@@ -355,6 +357,7 @@ public class Main {
     			maxDeep = this.deep;
     		}
     		this.id = nodeCount++;
+    		this.isChain = false;
     	}
     	
     	public void update() {
@@ -404,6 +407,13 @@ public class Main {
     		return max;
     	}
     	
+    	public void reverseChildrenRate() {
+    		for (int i = 0; i < this.children.size(); i++) {
+    			if (children.get(i).isChain)
+    				children.get(i).successRate *= -1;
+    		}
+    	}
+    	
     	public void showNodeData() {
     		if (this.children != null) {
     			System.err.printf("id : %3d, best_ucb : %f, rate : %f, games : %d, playout : %d, node : %d\n",
@@ -420,8 +430,9 @@ public class Main {
     	public void showAllChildren() {
     		for (int i = 0; i < this.children.size(); i++) {
     			Node c = this.children.get(i);
-    			System.err.printf("parentID : %3d, id : %3d, set : {%d, %d}, rate : %f, playout : %3d, ucb : %f, children : %d\n",
-    					this.id, c.id, c.set[0], c.set[1], c.successRate, c.playCount, c.ucb, c.childCount);
+    			if (c.successRate > 0)
+    				System.err.printf("parentID : %3d, id : %3d, set : {%d, %d}, rate : %f, playout : %3d, ucb : %f, children : %d\n",
+    						this.id, c.id, c.set[0], c.set[1], c.successRate, c.playCount, c.ucb, c.childCount);
     		}
     	}
     }
@@ -445,6 +456,7 @@ public class Main {
     			try {
     				bestChild = parent.children.get(index);
     			} catch (IndexOutOfBoundsException e) {
+    				System.err.println("nullpo");
     				println("0 0");  //lose
     			}
     			Pack p = (Pack)pack[bestChild.turn].clone();
@@ -452,11 +464,21 @@ public class Main {
     			nextBoard.obstacleNum = p.fillObstaclePack(nextBoard.obstacleNum);
     			p.packRotate(bestChild.set[1]);
     			nextBoard.setPack(p, bestChild.set[0]);
-    			nextBoard.howManyChain();
+    			int[] block = nextBoard.howManyChain();
     			if (nextBoard.dangerZone()) {
     				parent.children.remove(index);
+    				parent.childCount--;
     			} else {
-    				break;
+    				if (score(block) > FIRE && parent.parent == null) {
+    					debugArray(block);
+    					bestChild.successRate += SUCCESS;
+    					return;
+    				}
+    				if (block[0] > 0 && parent.deep == 0) {
+    					bestChild.isChain = true;
+    				} else {
+    					break;
+    				}
     			}
     		}
     		
@@ -485,7 +507,7 @@ public class Main {
     		}
     		int max = root.getBestUcbIndex();
     		
-//    		System.err.printf("TURN : %d\n", turn);
+    		System.err.printf("TURN : %d\n", turn);
     		//root.showAllChildren();
     		root.showNodeData();
     		root.showAllChildren();
@@ -503,8 +525,9 @@ public class Main {
     		Board bo = board;
     		Board buf = null;
     		n.playCount++;
-    		int nowTurn = n.turn;
+    		int nowTurn = n.turn + 1;
     		int[] block = null;
+    		int score = 0;
     		for (int t = 0; t < MAX_USE_PACKS; t++) {
     			Collections.shuffle(sample);
     			for (int i = 0; i < ALL; i++) {
@@ -514,25 +537,28 @@ public class Main {
     				p.packRotate(SET[sample.get(i)][1]);
     				buf.setPack(p, SET[sample.get(i)][0]);
     				block =  buf.howManyChain();
-
+    				score = score(block);
     				if (!buf.dangerZone()) {
-        				if (t < MAX_USE_PACKS - 1 && score(block) > 0) {
-        					return FAIL;
-        				}
-    					continue;
+    					break;
     				} else {
-    					return FAIL;
+    					if (i < ALL - 1)
+    						continue;
+    					else 
+    						return FAIL;
     				}
     			}
+    			
+	    		if (score > SUCCESS_SCORE) {
+	    			//System.err.printf("turn : %d, score : %d\n", turn, score);
+	    			//System.err.printf("turn : %d, score : %d\n", turn + MAX_USE_PACKS, score);
+	    			return score;
+	    		}
     			bo = buf;
     			if (turn >= maxTurn)
     				return FAIL;
     			nowTurn++;
     		}
-    		int score = score(block);
-    		if (score > 0) {
-    			return score;
-    		}
+
     		return FAIL;
     	}
     }
@@ -559,12 +585,14 @@ public class Main {
            int[] best = new int[2];
            makeSample();
            while (true) {
+        	   long start = System.currentTimeMillis();
                 turn = in.nextInt();
                 millitime = in.nextLong();
                 my = new Board(width, height, in);
                 op = new Board(width, height, in);
-                chainCheck((Board)my.clone(), (Pack)pack[turn].clone());
+                //chainCheck((Board)my.clone(), (Pack)pack[turn].clone());
                 int col = 0, rot = 0;
+                //debugArray(pack[turn].pack);
                 MonteCarlo monte = new MonteCarlo((Board)my.clone(), turn);
                 best = monte.getBest();
 
@@ -572,6 +600,8 @@ public class Main {
                 col = best[0];
                 
                 println(col + " " + rot);
+                long end = System.currentTimeMillis();
+                System.err.printf("time : %d\n", end - start);
             }
         }
     }
