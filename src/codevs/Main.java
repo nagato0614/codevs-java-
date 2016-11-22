@@ -21,12 +21,12 @@ public class Main {
     static final int FIRE = 100;
     static final int SIZE = 110;
     static final double K = 0.05;		//UCB constant
-    static final int MAX_PLAYOUT = 10000;
-    static final int MAX_USE_PACKS = 10;
+    static final int MAX_PLAYOUT = 5000;
+    static final int MAX_USE_PACKS = 5;
     static final int SUCCESS_SCORE = 5;
     static final double FAIL = 0.0;
     static final double SUCCESS = 1.0;
-    static final int THRESHOLD = 250;
+    static final int THRESHOLD = 50;
     static final int ALL = MAXPOSITION * MAXROTATE;
     
     int[][] SET;
@@ -487,8 +487,8 @@ public class Main {
     		
 //    		System.err.printf("TURN : %d\n", turn);
     		//root.showAllChildren();
-//    		root.showNodeData();
-//    		root.showAllChildren();
+    		root.showNodeData();
+    		root.showAllChildren();
 //    		for (int i = 0; i < root.children.size(); i++) {
 //    			if (root.children.get(i).children != null) {
 //    				root.children.get(i).showNodeData();
@@ -515,24 +515,19 @@ public class Main {
     				buf.setPack(p, SET[sample.get(i)][0]);
     				block =  buf.howManyChain();
     				if (!buf.dangerZone()) {
-    					break;
+    					continue;
     				} else {
-    					if (i < ALL - 1)
-    						continue;
-    					else 
-    						return FAIL;
+    					return FAIL;
     				}
     			}
     			bo = buf;
-    			int score = score(block);
-    			if (score > 0) {
-//    				System.err.printf("nowTurn : %3d, successTurn : %3d, deep : %3d, score : %3d\n",
-//    						turn, nowTurn, n.deep, score);
-    				return (double)score;
-    			}
     			if (turn >= maxTurn)
     				return FAIL;
     			nowTurn++;
+    		}
+    		int score = score(block);
+    		if (score > 0) {
+    			return score;
     		}
     		return FAIL;
     	}
