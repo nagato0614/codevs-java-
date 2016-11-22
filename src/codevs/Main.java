@@ -18,11 +18,11 @@ public class Main {
     static final int SIMTIME = 4;		//simulating time
     static final int MAXROTATE = 4;
     static final int MAXPOSITION = 8;
-    static final int FIRE = 150;
+    static final int FIRE = 50;
     static final int SIZE = 110;
     static final double K = 0.1;		//UCB constant
     static final int MAX_PLAYOUT = 10000;
-    static final int MAX_USE_PACKS = 3;
+    static final int MAX_USE_PACKS = 2;
     static final int SUCCESS_SCORE = 0;
     static final double FAIL = 0.0;
     static final double SUCCESS = 1000000;
@@ -407,6 +407,29 @@ public class Main {
     		return max;
     	}
     	
+    	public int getWorstUcbIndex() {
+    		int mini = 0;
+    		for (int i = 0; i < children.size(); i++) {
+    			children.get(i).calcUCB();
+    			if (children.get(i).ucb < children.get(mini).ucb) {
+    				mini = i;
+    			}
+    		}
+    		return mini;
+    	}
+    	
+    	public int countChianNode() {
+    		int sum = 0;
+    		for (int i = 0; i < this.children.size(); i++) {
+    			if (this.children.get(i).isChain)
+    				sum++;
+    		}
+    		if (sum == this.childCount)
+    			return this.getBestUcbIndex();
+    		else
+    			return this.getWorstUcbIndex();
+    	}
+    	
     	public void reverseChildrenRate() {
     		for (int i = 0; i < this.children.size(); i++) {
     			if (children.get(i).isChain)
@@ -457,7 +480,7 @@ public class Main {
     				bestChild = parent.children.get(index);
     			} catch (IndexOutOfBoundsException e) {
     				System.err.println("nullpo");
-    				println("0 0");  //lose
+    				println("lose");  //lose
     			}
     			Pack p = (Pack)pack[bestChild.turn].clone();
     			nextBoard = (Board) b.clone();
@@ -470,7 +493,7 @@ public class Main {
     				parent.childCount--;
     			} else {
     				if (score(block) > FIRE && parent.parent == null) {
-    					debugArray(block);
+    					//debugArray(block);
     					bestChild.successRate += SUCCESS;
     					return;
     				}
@@ -505,7 +528,7 @@ public class Main {
     			b = (Board) this.board.clone();
     			this.searchUCT(b, root);
     		}
-    		int max = root.getBestUcbIndex();
+    		int max = root.countChianNode();
     		
     		System.err.printf("TURN : %d\n", turn);
     		//root.showAllChildren();
