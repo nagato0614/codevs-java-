@@ -20,7 +20,7 @@ public class Main {
     static final int MAXPOSITION = 8;
     static final int FIRE = 100;
     static final int SIZE = 110;
-    static final double K = 0.1;		//UCB constant
+    static final double K = 0.05;		//UCB constant
     static final int MAX_PLAYOUT = 10000;
     static final int MAX_USE_PACKS = 10;
     static final int SUCCESS_SCORE = 5;
@@ -485,17 +485,17 @@ public class Main {
     		}
     		int max = root.getBestUcbIndex();
     		
-    		System.err.printf("TURN : %d\n", turn);
+//    		System.err.printf("TURN : %d\n", turn);
     		//root.showAllChildren();
-    		root.showNodeData();
-    		root.showAllChildren();
+//    		root.showNodeData();
+//    		root.showAllChildren();
 //    		for (int i = 0; i < root.children.size(); i++) {
 //    			if (root.children.get(i).children != null) {
 //    				root.children.get(i).showNodeData();
 //    				root.children.get(i).showAllChildren();
 //    			}
 //    		}
-    		System.err.printf("deep : %d\n", maxDeep);
+//    		System.err.printf("deep : %d\n", maxDeep);
     		return root.children.get(max).set;
     	}
     	
@@ -523,29 +523,19 @@ public class Main {
     						return FAIL;
     				}
     			}
-    			nowTurn++;
     			bo = buf;
     			int score = score(block);
-    			if (score >= SUCCESS_SCORE + n.deep) {
+    			if (score > 0) {
 //    				System.err.printf("nowTurn : %3d, successTurn : %3d, deep : %3d, score : %3d\n",
 //    						turn, nowTurn, n.deep, score);
-    				return ((double)score / (double)(nowTurn - n.turn));
+    				return (double)score;
     			}
     			if (turn >= maxTurn)
     				return FAIL;
+    			nowTurn++;
     		}
     		return FAIL;
     	}
-    }
-    
-    public int[] shinsu(int n, int shinsu, int length) {
-    	int x = n;
-    	int[] ans = new int[length];
-    	for (int i = length - 1; i >= 0; i--) {
-    		ans[i] = x % shinsu;
-    		x /= shinsu;
-    	}
-    	return ans;
     }
     
     void run() {
@@ -574,6 +564,7 @@ public class Main {
                 millitime = in.nextLong();
                 my = new Board(width, height, in);
                 op = new Board(width, height, in);
+                chainCheck((Board)my.clone(), (Pack)pack[turn].clone());
                 int col = 0, rot = 0;
                 MonteCarlo monte = new MonteCarlo((Board)my.clone(), turn);
                 best = monte.getBest();
@@ -584,6 +575,24 @@ public class Main {
                 println(col + " " + rot);
             }
         }
+    }
+    
+    void chainCheck(Board board, Pack nowPack) {
+    	int max = -1;
+    	for (int i = 0; i < MAXPOSITION; i++) {
+    		for (int j = 0; j < MAXROTATE; j++) {
+    			Board b  = (Board) board.clone();
+    			Pack p = (Pack) nowPack.clone();
+    			p.packRotate(j);
+    			b.setPack(p, i);
+    			int[] block = b.howManyChain();
+    			int score = score(block);
+    			if (score > max) {
+    				max = score;
+    			}
+    		}
+    	}
+    	System.err.printf("turn : %d, score : %d\n", turn, max);
     }
     
     void makeSample() {
@@ -645,5 +654,15 @@ public class Main {
     		System.err.printf("%d, ", a[i]);	
     	}
     	System.err.println("]");
+    }
+    
+    public int[] shinsu(int n, int shinsu, int length) {
+    	int x = n;
+    	int[] ans = new int[length];
+    	for (int i = length - 1; i >= 0; i--) {
+    		ans[i] = x % shinsu;
+    		x /= shinsu;
+    	}
+    	return ans;
     }
 }
