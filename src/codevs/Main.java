@@ -15,10 +15,11 @@ public class Main {
     
     static final String AI_NAME = "Monte_Carlo";
     static final int EMPTY = 0;
+    static final int MINIMU_DELETE_BLOCK = 2;
     static final int SIMTIME = 4;		//simulating time
     static final int MAXROTATE = 4;
     static final int MAXPOSITION = 8;
-    static final int FIRE = 200;
+    static final int FIRE = 50;
     static final int SIZE = 110;
     static final double K = 0.5;		//UCB constant
     static final int MAX_PLAYOUT = 5000;
@@ -104,6 +105,8 @@ public class Main {
         		this.fallBlock();
         		block.add(this.deleteBlock());
         	}
+        	if (block.size() > 1)
+        		block.remove(block.size() - 1);
         	int[] b = new int[block.size()];
         	for (int i = 0; i < block.size(); i ++) {
         		b[i] = block.get(i);
@@ -387,7 +390,7 @@ public class Main {
     		double keisu = 0.01;
     		double tei = 1.2;
     		double score = 0;
-    		for (int i = 0 + packSize; i < height + packSize; i++) {
+    		for (int i = packSize; i < height + packSize; i++) {
     			for (int j = 0; j < width; j++) {
     				if (board.simulateBoard[i][j] != 0) {
     					score += Math.pow(tei, Math.abs((width / 2.0) - j));
@@ -397,6 +400,32 @@ public class Main {
     		if (score == 0)
     			return 1.0;
     		return score * keisu;
+    	}
+    	
+    	public double higherPoint(Board board) {
+    		double keisu = 0.01;
+    		double tei = 1.2;
+    		double score = 0;
+    		for (int i = packSize; i < height + packSize; i++) {
+    			for (int j = 0; j < width; j++) {
+    				if (board.simulateBoard[i][j] != 0) {
+    					score += Math.pow(tei, i - packSize);
+    				}
+    			}
+    		}
+    		if (score == 0)
+    			return 1.0;
+    		return score * keisu;
+    	}
+    	
+    	public double chainPoint(int block[]) {
+    		double keisu = 0.01;
+    		double sum = 0;
+    		for (int i = 0; i < block.length - 1; i++) {
+    			sum += Math.abs(MINIMU_DELETE_BLOCK - block[i]);
+    		}
+    		sum += 1 / block[block.length - 1];
+    		return sum * keisu;
     	}
     	
     	public void addChild() {
@@ -558,7 +587,7 @@ public class Main {
     		Board buf = null;
     		int nowTurn = n.turn + 1;
     		int[] block = null;
-    		int score = 0;
+    		//int score = 0;
     		for (int t = 0; t < MAX_USE_PACKS; t++) {
     			Collections.shuffle(sample);
     			for (int i = 0; i < ALL; i++) {
@@ -568,7 +597,7 @@ public class Main {
     				p.packRotate(SET[sample.get(i)][1]);
     				buf.setPack(p, SET[sample.get(i)][0]);
     				block =  buf.howManyChain();
-    				score = score(block);
+    				//score = score(block);
     				if (!buf.dangerZone()) {
     					break;
     				} else {
@@ -582,7 +611,8 @@ public class Main {
 	    		if (chain(block) > SUCCESS_SCORE) {
 	    			//System.err.printf("turn : %d, score : %d\n", turn, score);
 	    			//System.err.printf("turn : %d, score : %d\n", turn + MAX_USE_PACKS, score);
-	    			return (chain(block) / 100.0) / n.centerSetPoint(buf);
+	    			return (chain(block) / 100.0) 
+	    					/ (n.centerSetPoint(buf) + n.higherPoint(buf) + n.chainPoint(block));
 	    		}
     			bo = buf;
     			if (turn >= maxTurn)
