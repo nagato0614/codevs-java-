@@ -18,9 +18,9 @@ public class Main {
     static final int SIMTIME = 4;		//simulating time
     static final int MAXROTATE = 4;
     static final int MAXPOSITION = 8;
-    static final int FIRE = 100;
+    static final int FIRE = 200;
     static final int SIZE = 110;
-    static final double K = 1;		//UCB constant
+    static final double K = 0.5;		//UCB constant
     static final int MAX_PLAYOUT = 5000;
     static final int MAX_USE_PACKS = 3;
     static final int SUCCESS_SCORE = 0;
@@ -582,7 +582,7 @@ public class Main {
 	    		if (chain(block) > SUCCESS_SCORE) {
 	    			//System.err.printf("turn : %d, score : %d\n", turn, score);
 	    			//System.err.printf("turn : %d, score : %d\n", turn + MAX_USE_PACKS, score);
-	    			return (chain(block) / 10.0) / n.centerSetPoint(buf);
+	    			return (chain(block) / 100.0) / n.centerSetPoint(buf);
 	    		}
     			bo = buf;
     			if (turn >= maxTurn)
@@ -594,8 +594,37 @@ public class Main {
     	}
     }
     
+    public class Time {
+    	private long start;
+    	private long end;
+    	private long average;
+    	private int num;
+    	public Time() {
+    		this.start = 0;
+    		this.end = 0;
+    		this.average = 0;
+    		this.num = 0;
+    	}
+    	
+    	public void start() {
+    		this.start = System.currentTimeMillis();
+    	}
+    	
+    	public void end() {
+    		this.end = System.currentTimeMillis();
+    	}
+    	
+    	public void showTime() {
+    		long time = end - start;
+    		this.average = (this.average * this.num + time) / (this.num + 1);
+    		this.num++;
+    		System.err.printf("time : %d, average : %d\n", time ,this.average);
+    	}
+    }
+    
     void run() {
         println(AI_NAME);
+        Time time = new Time();
         try (Scanner in = new Scanner(System.in)) {
             width = in.nextInt();
             height = in.nextInt();
@@ -616,7 +645,7 @@ public class Main {
            int[] best = new int[2];
            makeSample();
            while (true) {
-        	   long start = System.currentTimeMillis();
+        	   time.start();
                 turn = in.nextInt();
                 millitime = in.nextLong();
                 my = new Board(width, height, in);
@@ -631,8 +660,8 @@ public class Main {
                 col = best[0];
                 
                 println(col + " " + rot);
-                long end = System.currentTimeMillis();
-                System.err.printf("time : %d\n", end - start);
+                time.end();
+                time.showTime();
             }
         }
     }
