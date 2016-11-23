@@ -20,7 +20,7 @@ public class Main {
     static final int MAXPOSITION = 8;
     static final int FIRE = 50;
     static final int SIZE = 110;
-    static final double K = 0.1;		//UCB constant
+    static final double K = 1;		//UCB constant
     static final int MAX_PLAYOUT = 5000;
     static final int MAX_USE_PACKS = 3;
     static final int SUCCESS_SCORE = 0;
@@ -470,7 +470,8 @@ public class Main {
     		this.board = b;
     	}
     	
-    	public void searchUCT(Board b, Node parent) {
+    	public double searchUCT(Board b, Node parent) {
+    		double win = 0;
     		Node bestChild = null;
     		Board nextBoard = null;
     		for (int i = 0; i < ALL; i++) {
@@ -491,9 +492,10 @@ public class Main {
     				parent.children.remove(index);
     				parent.childCount--;
     			} else {
-    				if (score(block) > FIRE && parent.parent == null) {
+    				if (score(block) > FIRE && parent.deep == 0) {
+    					debugArray(block);
     					bestChild.successRate += SUCCESS;
-    					return;
+    					return SUCCESS;
     				}
     				if (block[0] > 0 && parent.deep == 0) {
     					if (score(block) > 1) {
@@ -508,18 +510,22 @@ public class Main {
     		}
     		
     		if (bestChild.children != null) {
-    			searchUCT((Board)nextBoard.clone(), bestChild);
+    			win = searchUCT((Board)nextBoard.clone(), bestChild);
     		} else {
     			if (bestChild.playCount <= THRESHOLD) {
-    				bestChild.updateSuccess(onePlayout((Board) nextBoard.clone(), bestChild));
+    				win = onePlayout((Board) nextBoard.clone(), bestChild);
     			} else {
     				bestChild.addChild();
     				//bestChild.showNodeData();
-    				searchUCT((Board) nextBoard.clone(), bestChild);
+    				win = searchUCT((Board) nextBoard.clone(), bestChild);
     			}
     		}
+    		bestChild.successRate = ((bestChild.successRate * bestChild.playCount + win) 
+    				/ (bestChild.playCount + 1));
     		parent.playCount++;
-    		parent.update(nextBoard);
+    		bestChild.playCount++;
+    		return win;
+    		//parent.update(nextBoard);
     	}
     	
     	//main
@@ -550,7 +556,6 @@ public class Main {
     	public double onePlayout(Board board, Node n) {
     		Board bo = board;
     		Board buf = null;
-    		n.playCount++;
     		int nowTurn = n.turn + 1;
     		int[] block = null;
     		int score = 0;
@@ -577,7 +582,7 @@ public class Main {
 	    		if (score > SUCCESS_SCORE) {
 	    			//System.err.printf("turn : %d, score : %d\n", turn, score);
 	    			//System.err.printf("turn : %d, score : %d\n", turn + MAX_USE_PACKS, score);
-	    			return score;
+	    			return (score / 100.0) / n.centerSetPoint(buf);
 	    		}
     			bo = buf;
     			if (turn >= maxTurn)
