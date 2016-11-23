@@ -455,8 +455,6 @@ public class Main {
     			Node c = this.children.get(i);
     			System.err.printf("parentID : %3d, id : %3d, set : {%d, %d}, rate : %f, playout : %3d, ucb : %f, children : %d\n",
     					this.id, c.id, c.set[0], c.set[1], c.successRate, c.playCount, c.ucb, c.childCount);
-    			if (c.isChain)
-    				System.err.println("true");
     		}
     	}
     }
@@ -494,13 +492,14 @@ public class Main {
     				parent.childCount--;
     			} else {
     				if (score(block) > FIRE && parent.parent == null) {
-    					debugArray(block);
     					bestChild.successRate += SUCCESS;
     					return;
     				}
     				if (block[0] > 0 && parent.deep == 0) {
-//        				parent.children.remove(index);
-//        				parent.childCount--;
+    					if (score(block) > 1) {
+    						parent.children.remove(index);
+        					parent.childCount--;
+    					}
     					bestChild.isChain = true;
     				} else {
     					break;
