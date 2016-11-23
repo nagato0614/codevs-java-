@@ -21,12 +21,12 @@ public class Main {
     static final int FIRE = 50;
     static final int SIZE = 110;
     static final double K = 0.1;		//UCB constant
-    static final int MAX_PLAYOUT = 10000;
+    static final int MAX_PLAYOUT = 5000;
     static final int MAX_USE_PACKS = 3;
     static final int SUCCESS_SCORE = 0;
     static final double FAIL = 0.0;
     static final double SUCCESS = 1000000;
-    static final int THRESHOLD = 100;
+    static final int THRESHOLD = 50;
     static final int ALL = MAXPOSITION * MAXROTATE;
     
     int[][] SET;
@@ -385,7 +385,7 @@ public class Main {
     	
     	public double centerSetPoint(Board board) {
     		double keisu = 0.01;
-    		double tei = 1.1;
+    		double tei = 1.2;
     		double score = 0;
     		for (int i = 0 + packSize; i < height + packSize; i++) {
     			for (int j = 0; j < width; j++) {
@@ -455,6 +455,8 @@ public class Main {
     			Node c = this.children.get(i);
     			System.err.printf("parentID : %3d, id : %3d, set : {%d, %d}, rate : %f, playout : %3d, ucb : %f, children : %d\n",
     					this.id, c.id, c.set[0], c.set[1], c.successRate, c.playCount, c.ucb, c.childCount);
+    			if (c.isChain)
+    				System.err.println("true");
     		}
     	}
     }
@@ -499,7 +501,7 @@ public class Main {
     				if (block[0] > 0 && parent.deep == 0) {
 //        				parent.children.remove(index);
 //        				parent.childCount--;
-    					parent.isChain = true;
+    					bestChild.isChain = true;
     				} else {
     					break;
     				}
