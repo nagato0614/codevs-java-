@@ -360,7 +360,7 @@ public class Main {
     		this.isChain = false;
     	}
     	
-    	public void update() {
+    	public void update(Board board) {
     		double sum = 0;
     		//int play = 0;
     		for (int i = 0; i < this.children.size(); i++) {
@@ -369,11 +369,24 @@ public class Main {
     			sum += c.successRate;
     		}
     		//this.playCount = play;
-    		this.successRate = sum / this.children.size();
+    		this.successRate = sum / this.children.size() - this.centerSetPoint(board);
     	}
     	
     	public void updateSuccess(double win) {
     		this.successRate = (this.playCount * this.successRate + win) / (this.playCount + 1);
+    	}
+    	
+    	public double centerSetPoint(Board board) {
+    		double score = 0;
+    		for (int i = 0 + packSize; i < height + packSize; i++) {
+    			for (int j = 0; j < width; j++) {
+    				if (board.simulateBoard[i][j] != 0) {
+    					score += Math.abs((width / 2.0) - j);
+    				}
+    			}
+    		}
+    		double keisu = 0.001;
+    		return score * keisu;
     	}
     	
     	public void addChild() {
@@ -475,7 +488,8 @@ public class Main {
     					return;
     				}
     				if (block[0] > 0 && parent.deep == 0) {
-    					bestChild.isChain = true;
+        				parent.children.remove(index);
+        				parent.childCount--;
     				} else {
     					break;
     				}
@@ -494,7 +508,7 @@ public class Main {
     			}
     		}
     		parent.playCount++;
-    		parent.update();
+    		parent.update(nextBoard);
     	}
     	
     	//main
