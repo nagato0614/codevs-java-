@@ -26,7 +26,7 @@ public class Main {
     static final int SUCCESS_SCORE = 0;
     static final double FAIL = 0.0;
     static final double SUCCESS = 1000000;
-    static final int THRESHOLD = 150;
+    static final int THRESHOLD = 100;
     static final int ALL = MAXPOSITION * MAXROTATE;
     
     int[][] SET;
@@ -376,7 +376,7 @@ public class Main {
     			sum += c.successRate;
     		}
     		//this.playCount = play;
-    		this.successRate = (sum / this.children.size()) - this.centerSetPoint(board);
+    		this.successRate = (sum / this.children.size()) / this.centerSetPoint(board);
     	}
     	
     	public void updateSuccess(double win) {
@@ -384,15 +384,18 @@ public class Main {
     	}
     	
     	public double centerSetPoint(Board board) {
+    		double keisu = 0.01;
+    		double tei = 1.1;
     		double score = 0;
     		for (int i = 0 + packSize; i < height + packSize; i++) {
     			for (int j = 0; j < width; j++) {
     				if (board.simulateBoard[i][j] != 0) {
-    					score += Math.abs((width / 2.0) - j);
+    					score += Math.pow(tei, Math.abs((width / 2.0) - j));
     				}
     			}
     		}
-    		double keisu = 0.0001;
+    		if (score == 0)
+    			return 1.0;
     		return score * keisu;
     	}
     	
@@ -494,8 +497,9 @@ public class Main {
     					return;
     				}
     				if (block[0] > 0 && parent.deep == 0) {
-        				parent.children.remove(index);
-        				parent.childCount--;
+//        				parent.children.remove(index);
+//        				parent.childCount--;
+    					parent.isChain = true;
     				} else {
     					break;
     				}
@@ -524,6 +528,7 @@ public class Main {
     		for (int i = 0; i < MAX_PLAYOUT; i++) {
     			b = (Board) this.board.clone();
     			this.searchUCT(b, root);
+    			root.reverseChildrenRate();
     		}
     		int max = root.getBestUcbIndex();
     		
