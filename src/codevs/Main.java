@@ -18,7 +18,7 @@ public class Main {
     static final int SIMTIME = 4;		//simulating time
     static final int MAXROTATE = 4;
     static final int MAXPOSITION = 8;
-    static final int FIRE = 50;
+    static final int FIRE = 100;
     static final int SIZE = 110;
     static final double K = 1;		//UCB constant
     static final int MAX_PLAYOUT = 5000;
@@ -493,12 +493,12 @@ public class Main {
     				parent.childCount--;
     			} else {
     				if (score(block) > FIRE && parent.deep == 0) {
-    					debugArray(block);
+    					//debugArray(block);
     					bestChild.successRate += SUCCESS;
     					return SUCCESS;
     				}
     				if (block[0] > 0 && parent.deep == 0) {
-    					if (score(block) > 1) {
+    					if (score(block) > 2) {
     						parent.children.remove(index);
         					parent.childCount--;
     					}
@@ -579,10 +579,10 @@ public class Main {
     				}
     			}
     			
-	    		if (score > SUCCESS_SCORE) {
+	    		if (chain(block) > SUCCESS_SCORE) {
 	    			//System.err.printf("turn : %d, score : %d\n", turn, score);
 	    			//System.err.printf("turn : %d, score : %d\n", turn + MAX_USE_PACKS, score);
-	    			return (score / 100.0) / n.centerSetPoint(buf);
+	    			return (chain(block) / 10.0) / n.centerSetPoint(buf);
 	    		}
     			bo = buf;
     			if (turn >= maxTurn)
