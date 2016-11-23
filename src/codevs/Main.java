@@ -18,7 +18,7 @@ public class Main {
     static final int SIMTIME = 4;		//simulating time
     static final int MAXROTATE = 4;
     static final int MAXPOSITION = 8;
-    static final int FIRE = 150;
+    static final int FIRE = 50;
     static final int SIZE = 110;
     static final double K = 0.1;		//UCB constant
     static final int MAX_PLAYOUT = 10000;
@@ -360,6 +360,13 @@ public class Main {
     		this.isChain = false;
     	}
     	
+    	public void reverseSuccessRate() {
+    		for (int i = 0; i < this.children.size(); i++) {
+    			if (this.children.get(i).isChain)
+    				this.children.get(i).successRate *= -1;
+    		}
+    	}
+    	
     	public void update(Board board) {
     		double sum = 0;
     		//int play = 0;
@@ -369,7 +376,7 @@ public class Main {
     			sum += c.successRate;
     		}
     		//this.playCount = play;
-    		this.successRate = sum / this.children.size() - this.centerSetPoint(board);
+    		this.successRate = (sum / this.children.size()) - this.centerSetPoint(board);
     	}
     	
     	public void updateSuccess(double win) {
@@ -385,7 +392,7 @@ public class Main {
     				}
     			}
     		}
-    		double keisu = 0.001;
+    		double keisu = 0.0001;
     		return score * keisu;
     	}
     	
@@ -443,9 +450,8 @@ public class Main {
     	public void showAllChildren() {
     		for (int i = 0; i < this.children.size(); i++) {
     			Node c = this.children.get(i);
-    			if (c.successRate > 0)
-    				System.err.printf("parentID : %3d, id : %3d, set : {%d, %d}, rate : %f, playout : %3d, ucb : %f, children : %d\n",
-    						this.id, c.id, c.set[0], c.set[1], c.successRate, c.playCount, c.ucb, c.childCount);
+    			System.err.printf("parentID : %3d, id : %3d, set : {%d, %d}, rate : %f, playout : %3d, ucb : %f, children : %d\n",
+    					this.id, c.id, c.set[0], c.set[1], c.successRate, c.playCount, c.ucb, c.childCount);
     		}
     	}
     }
@@ -469,7 +475,7 @@ public class Main {
     			try {
     				bestChild = parent.children.get(index);
     			} catch (IndexOutOfBoundsException e) {
-    				System.err.println("nullpo");
+    				System.err.println("IndexOutOfBoundsException");
     				println("0 0");  //lose
     			}
     			Pack p = (Pack)pack[bestChild.turn].clone();
