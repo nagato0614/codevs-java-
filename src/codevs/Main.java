@@ -274,6 +274,34 @@ public class Main {
         	return res;
         }
         
+    		double keisu = 0.01;
+    		double tei = 1.3;
+    		double score = 0;
+    		for (int i = packSize; i < height + packSize; i++) {
+    			for (int j = 0; j < width; j++) {
+    					score += Math.pow(tei, Math.abs((width / 2.0) - j));
+    				}
+    			}
+    		}
+    		if (score == 0)
+    			return 1.0;
+    		return score * keisu;
+    	}
+        
+    		double keisu = 0.01;
+    		double tei = 1.2;
+    		double score = 0;
+    		for (int i = packSize; i < height + packSize; i++) {
+    			for (int j = 0; j < width; j++) {
+    					score += Math.pow(tei, i - packSize);
+    				}
+    			}
+    		}
+    		if (score == 0)
+    			return 1.0;
+    		return score * keisu;
+    	}
+    	
         @Override
         public Object clone() {
         	try {
@@ -379,56 +407,13 @@ public class Main {
     			sum += c.successRate;
     		}
     		//this.playCount = play;
-    		this.successRate = (sum / this.children.size()) / this.centerSetPoint(board);
+    		this.successRate = (sum / this.children.size());
     	}
     	
     	public void updateSuccess(double win) {
     		this.successRate = (this.playCount * this.successRate + win) / (this.playCount + 1);
     	}
-    	
-    	public double centerSetPoint(Board board) {
-    		double keisu = 0.01;
-    		double tei = 1.3;
-    		double score = 0;
-    		for (int i = packSize; i < height + packSize; i++) {
-    			for (int j = 0; j < width; j++) {
-    				if (board.simulateBoard[i][j] != 0) {
-    					score += Math.pow(tei, Math.abs((width / 2.0) - j));
-    				}
-    			}
-    		}
-    		if (score == 0)
-    			return 1.0;
-    		return score * keisu;
-    	}
-    	
-    	public double higherPoint(Board board) {
-    		double keisu = 0.01;
-    		double tei = 1.2;
-    		double score = 0;
-    		for (int i = packSize; i < height + packSize; i++) {
-    			for (int j = 0; j < width; j++) {
-    				if (board.simulateBoard[i][j] != 0) {
-    					score += Math.pow(tei, i - packSize);
-    				}
-    			}
-    		}
-    		if (score == 0)
-    			return 1.0;
-    		return score * keisu;
-    	}
-    	
-    	public double chainPoint(int block[]) {
-    		double keisu = 0.05;
-    		double tei = 1.1;
-    		double sum = 0;
-    		for (int i = 0; i < block.length; i++) {
-    			sum += Math.pow(tei, Math.abs(MINIMU_DELETE_BLOCK - block[i]));
-    		}
-    		if (sum == 0)
-    			return 1.0;
-    		return sum;
-    	}
+    
     	
     	public void addChild() {
     		this.children = new ArrayList<Node>(32);
@@ -592,6 +577,22 @@ public class Main {
 //    		}
 //    		System.err.printf("deep : %d\n", maxDeep);
     		return root.children.get(max).set;
+    	}
+    	
+    	public double higherPoint(Board board) {
+    		double keisu = 0.01;
+    		double tei = 1.2;
+    		double score = 0;
+    		for (int i = packSize; i < height + packSize; i++) {
+    			for (int j = 0; j < width; j++) {
+    				if (board.simulateBoard[i][j] != 0) {
+    					score += Math.pow(tei, i - packSize);
+    				}
+    			}
+    		}
+    		if (score == 0)
+    			return 1.0;
+    		return score * keisu;
     	}
     	
     	public double onePlayout(Board board, Node n) {
