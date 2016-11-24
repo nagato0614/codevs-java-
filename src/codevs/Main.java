@@ -21,8 +21,8 @@ public class Main {
     static final int MAXPOSITION = 8;
     static final int FIRE = 50;
     static final int SIZE = 110;
-    static final double K = 0.5;		//UCB constant
-    static final int MAX_PLAYOUT = 5000;
+    static final double K = 0.1;		//UCB constant
+    static final int MAX_PLAYOUT = 10000;
     static final int MAX_USE_PACKS = 3;
     static final int SUCCESS_SCORE = 0;
     static final double FAIL = 0.0;
@@ -388,7 +388,7 @@ public class Main {
     	
     	public double centerSetPoint(Board board) {
     		double keisu = 0.01;
-    		double tei = 1.2;
+    		double tei = 1.3;
     		double score = 0;
     		for (int i = packSize; i < height + packSize; i++) {
     			for (int j = 0; j < width; j++) {
@@ -419,13 +419,15 @@ public class Main {
     	}
     	
     	public double chainPoint(int block[]) {
-    		double keisu = 0.01;
+    		double keisu = 0.05;
+    		double tei = 1.1;
     		double sum = 0;
-    		for (int i = 0; i < block.length - 1; i++) {
-    			sum += Math.abs(MINIMU_DELETE_BLOCK - block[i]);
+    		for (int i = 0; i < block.length; i++) {
+    			sum += Math.pow(tei, Math.abs(MINIMU_DELETE_BLOCK - block[i]));
     		}
-    		sum += 1 / block[block.length - 1];
-    		return sum * keisu;
+    		if (sum == 0)
+    			return 1.0;
+    		return sum;
     	}
     	
     	public void addChild() {
@@ -485,6 +487,16 @@ public class Main {
     			System.err.printf("parentID : %3d, id : %3d, set : {%d, %d}, rate : %f, playout : %3d, ucb : %f, children : %d\n",
     					this.id, c.id, c.set[0], c.set[1], c.successRate, c.playCount, c.ucb, c.childCount);
     		}
+    	}
+    	
+    	public int getMaxPlayoutIndex() {
+    		int max = 0;
+    		for (int i = 0; i < this.children.size(); i++) {
+    			if (this.children.get(i).playCount > this.children.get(max).playCount) {
+    				max = i;
+    			}
+    		}
+    		return max;
     	}
     }
     
@@ -564,8 +576,8 @@ public class Main {
     		for (int i = 0; i < MAX_PLAYOUT; i++) {
     			b = (Board) this.board.clone();
     			this.searchUCT(b, root);
-    			root.reverseChildrenRate();
     		}
+			root.reverseChildrenRate();
     		int max = root.getBestUcbIndex();
     		
     		System.err.printf("TURN : %d\n", turn);
@@ -611,8 +623,7 @@ public class Main {
 	    		if (chain(block) > SUCCESS_SCORE) {
 	    			//System.err.printf("turn : %d, score : %d\n", turn, score);
 	    			//System.err.printf("turn : %d, score : %d\n", turn + MAX_USE_PACKS, score);
-	    			return (chain(block) / 100.0) 
-	    					/ (n.centerSetPoint(buf) + n.higherPoint(buf) + n.chainPoint(block));
+	    			return (chain(block) / 80.0);
 	    		}
     			bo = buf;
     			if (turn >= maxTurn)
