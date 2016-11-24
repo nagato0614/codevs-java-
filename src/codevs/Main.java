@@ -21,7 +21,7 @@ public class Main {
     static final int MAXPOSITION = 8;
     static final int FIRE = 50;
     static final int SIZE = 110;
-    static final double K = 0.1;		//UCB constant
+    static final double K = 0.4;		//UCB constant
     static final int MAX_PLAYOUT = 10000;
     static final int MAX_USE_PACKS = 3;
     static final int SUCCESS_SCORE = 0;
@@ -274,11 +274,13 @@ public class Main {
         	return res;
         }
         
+    	public double centerSetPoint() {
     		double keisu = 0.01;
     		double tei = 1.3;
     		double score = 0;
     		for (int i = packSize; i < height + packSize; i++) {
     			for (int j = 0; j < width; j++) {
+    				if (this.simulateBoard[i][j] != 0) {
     					score += Math.pow(tei, Math.abs((width / 2.0) - j));
     				}
     			}
@@ -288,11 +290,13 @@ public class Main {
     		return score * keisu;
     	}
         
+    	public double higherPoint() {
     		double keisu = 0.01;
     		double tei = 1.2;
     		double score = 0;
     		for (int i = packSize; i < height + packSize; i++) {
     			for (int j = 0; j < width; j++) {
+    				if (this.simulateBoard[i][j] != 0) {
     					score += Math.pow(tei, i - packSize);
     				}
     			}
@@ -391,6 +395,17 @@ public class Main {
     		this.isChain = false;
     	}
     	
+    	public boolean isAllChained() {
+    		int sum = 0;
+    		for (int i = 0; i < this.children.size(); i++) {
+    			if (this.children.get(i).isChain)
+    				sum++;
+    		}
+    		if (sum == this.children.size())
+    			return true;
+    		return false;
+    	}
+    	
     	public void reverseSuccessRate() {
     		for (int i = 0; i < this.children.size(); i++) {
     			if (this.children.get(i).isChain)
@@ -432,6 +447,8 @@ public class Main {
     		} else {
     			this.ucb = this.successRate 
     					+ K * Math.sqrt((Math.log((double)this.parent.playCount) * 2.0) / (double)this.playCount);
+    			if (this.isChain)
+    				this.ucb *= 0.5;
     		}
     	}
     	
@@ -579,21 +596,7 @@ public class Main {
     		return root.children.get(max).set;
     	}
     	
-    	public double higherPoint(Board board) {
-    		double keisu = 0.01;
-    		double tei = 1.2;
-    		double score = 0;
-    		for (int i = packSize; i < height + packSize; i++) {
-    			for (int j = 0; j < width; j++) {
-    				if (board.simulateBoard[i][j] != 0) {
-    					score += Math.pow(tei, i - packSize);
-    				}
-    			}
-    		}
-    		if (score == 0)
-    			return 1.0;
-    		return score * keisu;
-    	}
+
     	
     	public double onePlayout(Board board, Node n) {
     		Board bo = board;
@@ -624,7 +627,7 @@ public class Main {
 	    		if (chain(block) > SUCCESS_SCORE) {
 	    			//System.err.printf("turn : %d, score : %d\n", turn, score);
 	    			//System.err.printf("turn : %d, score : %d\n", turn + MAX_USE_PACKS, score);
-	    			return (chain(block) / 80.0);
+	    			return (chain(block) / 80.0) / buf.higherPoint();
 	    		}
     			bo = buf;
     			if (turn >= maxTurn)
