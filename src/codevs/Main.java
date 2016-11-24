@@ -289,7 +289,7 @@ public class Main {
     			return 1.0;
     		return score * keisu;
     	}
-        
+    	
     	public double higherPoint() {
     		double keisu = 0.01;
     		double tei = 1.2;
@@ -305,7 +305,7 @@ public class Main {
     			return 1.0;
     		return score * keisu;
     	}
-    	
+        
         @Override
         public Object clone() {
         	try {
@@ -428,7 +428,8 @@ public class Main {
     	public void updateSuccess(double win) {
     		this.successRate = (this.playCount * this.successRate + win) / (this.playCount + 1);
     	}
-    
+    	
+
     	
     	public void addChild() {
     		this.children = new ArrayList<Node>(32);
@@ -596,7 +597,17 @@ public class Main {
     		return root.children.get(max).set;
     	}
     	
-
+    	public double chainPoint(int block[]) {
+    		double keisu = 0.05;
+    		double tei = 1.1;
+    		double sum = 0;
+    		for (int i = 0; i < block.length; i++) {
+    			sum += Math.pow(tei, Math.abs(MINIMU_DELETE_BLOCK - block[i]));
+    		}
+    		if (sum == 0)
+    			return 1.0;
+    		return sum;
+    	}
     	
     	public double onePlayout(Board board, Node n) {
     		Board bo = board;
