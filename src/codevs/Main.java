@@ -21,15 +21,15 @@ public class Main {
     static final int MAXPOSITION = 8;
     static final int FIRE = 50;
     static final int SIZE = 110;
-    static final double K = 0.4;		//UCB constant
-    static final int MAX_PLAYOUT = 10000;
+    static final double K = 0.6;		//UCB constant
+    static final int MAX_PLAYOUT = 8000;
     static final int MAX_USE_PACKS = 3;
-    static final int SUCCESS_SCORE = 0;
+    static final int SUCCESS_SCORE = 2;
     static final double FAIL = 0.0;
     static final double SUCCESS = 1000000;
     static final int THRESHOLD = 50;
     static final int ALL = MAXPOSITION * MAXROTATE;
-    static final double CHAINED_COEFF = 1.0;
+    static final double CHAINED_COEFF = 0.3;
     
     int[][] SET;
     ArrayList<Integer> sample;
@@ -276,35 +276,33 @@ public class Main {
         }
         
     	public double centerSetPoint() {
-    		double keisu = 0.01;
-    		double tei = 1.3;
+    		double coeff = 0.1;
+    		double base = 1.3;
     		double score = 0;
     		for (int i = packSize; i < height + packSize; i++) {
     			for (int j = 0; j < width; j++) {
     				if (this.simulateBoard[i][j] != 0) {
-    					score += Math.pow(tei, Math.abs((width / 2.0) - j));
+    					score += Math.pow(base, Math.abs((width / 2.0) - j));
     				}
     			}
     		}
     		if (score == 0)
     			return 1.0;
-    		return score * keisu;
+    		return score * coeff;
     	}
     	
     	public double higherPoint() {
-    		double keisu = 0.01;
-    		double tei = 1.2;
+    		double coeff = 0.1;
+    		double base = 1.2;
     		double score = 0;
     		for (int i = packSize; i < height + packSize; i++) {
     			for (int j = 0; j < width; j++) {
     				if (this.simulateBoard[i][j] != 0) {
-    					score += Math.pow(tei, i - packSize);
+    					score += Math.pow(base, i - packSize);
     				}
     			}
     		}
-    		if (score == 0)
-    			return 1.0;
-    		return score * keisu;
+    		return (1 / score) * coeff;
     	}
         
         @Override
@@ -382,6 +380,7 @@ public class Main {
     	int deep;
     	int id;
     	boolean isChain;
+    	double pileHightCoeff;
     	
     	public Node (Node parent, int[] s, int nowTurn, int deep) {
     		this.parent = parent;
@@ -394,6 +393,12 @@ public class Main {
     		}
     		this.id = nodeCount++;
     		this.isChain = false;
+    		this.pileHightCoeff = 0.0;
+    	}
+    	
+    	public void calcValue(Board board) {
+    		if (this.pileHightCoeff == 0)
+    			this.pileHightCoeff = board.higherPoint();
     	}
     	
     	public boolean isAllChained() {
@@ -451,6 +456,7 @@ public class Main {
     					+ K * Math.sqrt((Math.log((double)this.parent.playCount) * 2.0) / (double)this.playCount);
     			if (this.isChain)
     				this.ucb *= CHAINED_COEFF;
+    			this.ucb += this.pileHightCoeff;
     		}
     	}
     	
@@ -488,8 +494,8 @@ public class Main {
     	public void showAllChildren() {
     		for (int i = 0; i < this.children.size(); i++) {
     			Node c = this.children.get(i);
-    			System.err.printf("parentID : %3d, id : %3d, set : {%d, %d}, rate : %f, playout : %3d, ucb : %f, children : %d\n",
-    					this.id, c.id, c.set[0], c.set[1], c.successRate, c.playCount, c.ucb, c.childCount);
+    			System.err.printf("id : %3d, set : {%d, %d}, rate : %f, playout : %3d, ucb : %f, children : %2d\n",
+    					c.id, c.set[0], c.set[1], c.successRate, c.playCount, c.ucb, c.childCount);
     		}
     	}
     	
@@ -540,7 +546,6 @@ public class Main {
     				if (score(block) > FIRE && parent.deep == 0) {
     					//debugArray(block);
     					bestChild.successRate += SUCCESS;
-    					return SUCCESS;
     				}
     				if (block[0] > 0 && parent.deep == 0) {
 //    					if (score(block) > 2) {
@@ -553,6 +558,8 @@ public class Main {
     				}
     			}
     		}
+    		
+    		//bestChild.calcValue(nextBoard);
     		
     		if (bestChild.children != null) {
     			win = searchUCT((Board)nextBoard.clone(), bestChild);
@@ -599,15 +606,12 @@ public class Main {
     	}
     	
     	public double chainPoint(int block[]) {
-    		double keisu = 0.05;
-    		double tei = 1.1;
+    		double base = 5;
     		double sum = 0;
     		for (int i = 0; i < block.length; i++) {
-    			sum += Math.pow(tei, Math.abs(MINIMU_DELETE_BLOCK - block[i]));
+    			sum += Math.pow(base, Math.abs(MINIMU_DELETE_BLOCK - block[i]));
     		}
-    		if (sum == 0)
-    			return 1.0;
-    		return sum;
+    		return 1.0 / (sum / chain(block));
     	}
     	
     	public double onePlayout(Board board, Node n) {
