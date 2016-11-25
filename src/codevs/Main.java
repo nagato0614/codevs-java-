@@ -16,9 +16,12 @@ public class Main {
     static final int EMPTY = 0;
     static final int SIMTIME = 3;		//simulating time
     static final int MAXROTATE = 4;
+    static final int MAXPOSITION = 8;
     static final int FIRE = 150;
     static final int MINIMUN_CHAIN_BLOCK = 2;
     
+    int maxDeep = 0;
+    int nodeCount = 0;
     
     Random random = new Random();
     int turn = -1;
@@ -398,6 +401,7 @@ public class Main {
     }
     
     class Pack implements Cloneable {
+
     	int[][] pack = new int[width][height];
     	
     	public void packRotate(int rot) {
@@ -443,6 +447,40 @@ public class Main {
     		return cpy;
     	}
     }
+
+    public class Node {
+    	Node parent = null;
+    	ArrayList<Node> children = null;
+    	int childCount = 0;
+    	int[] set = null; 	//set[0] = pos, set[1] = rot
+    	int turn;
+    	int deep;
+    	int id;
+    	boolean isChain;
+    	
+    	public Node (Node parent, int[] s, int nowTurn, int deep) {
+    		this.parent = parent;
+    		this.turn = nowTurn;
+    		this.set = s;
+    		this.deep = deep;
+    		if (this.deep > maxDeep) {
+    			maxDeep = this.deep;
+    		}
+    		this.id = nodeCount++;
+    		this.isChain = false;
+    	}   
+    	
+    	public void addChild() {
+    		this.children = new ArrayList<Node>(32);
+    		for (int i = 0; i < MAXPOSITION; i++) {
+    			for (int j = 0; j < MAXROTATE; j++) {
+    				int[] s = {i, j};
+    				this.children.add(new Node(this, s, this.turn + 1, this.deep + 1));
+    				this.childCount++;
+    			}
+    		}
+    	}
+    } 
     
     public class AllSearch {
     	private Pack[] packs;
