@@ -29,6 +29,7 @@ public class Main {
     static final double SUCCESS = 1000000;
     static final int THRESHOLD = 50;
     static final int ALL = MAXPOSITION * MAXROTATE;
+    static final double CHAINED_COEFF = 1.0;
     
     int[][] SET;
     ArrayList<Integer> sample;
@@ -449,7 +450,7 @@ public class Main {
     			this.ucb = this.successRate 
     					+ K * Math.sqrt((Math.log((double)this.parent.playCount) * 2.0) / (double)this.playCount);
     			if (this.isChain)
-    				this.ucb *= 0.5;
+    				this.ucb *= CHAINED_COEFF;
     		}
     	}
     	
@@ -542,10 +543,10 @@ public class Main {
     					return SUCCESS;
     				}
     				if (block[0] > 0 && parent.deep == 0) {
-    					if (score(block) > 2) {
-    						parent.children.remove(index);
-        					parent.childCount--;
-    					}
+//    					if (score(block) > 2) {
+//    						parent.children.remove(index);
+//        					parent.childCount--;
+//    					}
     					bestChild.isChain = true;
     				} else {
     					break;
@@ -580,7 +581,7 @@ public class Main {
     			b = (Board) this.board.clone();
     			this.searchUCT(b, root);
     		}
-			root.reverseChildrenRate();
+			//root.reverseChildrenRate();
     		int max = root.getBestUcbIndex();
     		
     		System.err.printf("TURN : %d\n", turn);
@@ -638,7 +639,7 @@ public class Main {
 	    		if (chain(block) > SUCCESS_SCORE) {
 	    			//System.err.printf("turn : %d, score : %d\n", turn, score);
 	    			//System.err.printf("turn : %d, score : %d\n", turn + MAX_USE_PACKS, score);
-	    			return (chain(block) / 80.0) / buf.higherPoint();
+	    			return (chain(block) / (double)FIRE);
 	    		}
     			bo = buf;
     			if (turn >= maxTurn)
