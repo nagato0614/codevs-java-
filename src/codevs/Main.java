@@ -12,11 +12,14 @@ public class Main {
         new Main().run();
     }
     
-    static final String AI_NAME = "allserach";
+    static final String AI_NAME = "allserach_V2";
     static final int EMPTY = 0;
     static final int SIMTIME = 3;		//simulating time
     static final int MAXROTATE = 4;
     static final int FIRE = 150;
+    static final int MINIMUN_CHAIN_BLOCK = 2;
+    
+    
     Random random = new Random();
     int turn = -1;
     Pack[] pack;
@@ -217,7 +220,7 @@ public class Main {
         		block.add(this.deleteBlock());
         	}
         	int[] b = new int[block.size()];
-        	for (int i = 0; i < block.size(); i ++) {
+        	for (int i = 0; i < block.size() - 1; i ++) {
         		b[i] = block.get(i);
         	}
         	return b;
@@ -451,10 +454,21 @@ public class Main {
     		this.obstacle = obstacle;
     	}
     	
+    	public double chainQuality(int[] block) {
+    		int sum = 0;
+    		double base = 1.05;
+    		for (int i = 0; i < block.length; i++) {
+    			sum += Math.pow(base, (block[i] - MINIMUN_CHAIN_BLOCK));
+    		}
+    		if (sum == 0)
+    			return 1.0;
+    		return 1.0 / (1 + sum / block.length);
+    	}
+    	
     	public int[][] simulate() {
     		boolean insuranceFlag = true;
-    		int maxScore = 0;
-    		int nowScore = 0;
+    		double maxScore = 0;
+    		double nowScore = 0;
     		int[] rotate;
     		int[] position;
     		int[][] best = new int[2][SIMTIME];
@@ -492,6 +506,8 @@ public class Main {
     	    				insurance[1] = Arrays.copyOf(position, position.length);
     	    				insuranceFlag = false;
     					}
+    					
+    					nowScore *= this.chainQuality(block);
     					if (nowScore > maxScore) {
     						maxScore = nowScore;
     						best[0] = Arrays.copyOf(rotate, rotate.length);
@@ -504,6 +520,7 @@ public class Main {
     		if (maxScore <= 0) {
     			return insurance;
     		}
+    		System.err.printf("maxScore : %f\n", maxScore);
 			return best;
     	}
     }
