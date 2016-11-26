@@ -1,7 +1,9 @@
 package codevs;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Queue;
 import java.util.Random;
 import java.util.Scanner;
 import java.lang.Math;
@@ -14,11 +16,12 @@ public class Main {
     
     static final String AI_NAME = "allserach_V2";
     static final int EMPTY = 0;
-    static final int SIMTIME = 3;		//simulating time
+    static final int SIMTIME = 4;		//simulating time
     static final int MAXROTATE = 4;
     static final int MAXPOSITION = 8;
     static final int FIRE = 150;
     static final int MINIMUN_CHAIN_BLOCK = 2;
+    static final int ALL = MAXROTATE * MAXPOSITION;
     
     int maxDeep = 0;
     int nodeCount = 0;
@@ -451,12 +454,14 @@ public class Main {
     public class Node {
     	Node parent = null;
     	ArrayList<Node> children = null;
+    	Board board;
     	int childCount = 0;
     	int[] set = null; 	//set[0] = pos, set[1] = rot
     	int turn;
     	int deep;
     	int id;
     	boolean isChain;
+    	int maxScore = 0;
     	
     	public Node (Node parent, int[] s, int nowTurn, int deep) {
     		this.parent = parent;
@@ -468,7 +473,12 @@ public class Main {
     		}
     		this.id = nodeCount++;
     		this.isChain = false;
-    	}   
+    	}
+    	
+    	public void setBoard(Board b) {
+    		if (this.board == null)
+    			this.board = b;
+    	}
     	
     	public void addChild() {
     		this.children = new ArrayList<Node>(32);
@@ -480,16 +490,86 @@ public class Main {
     			}
     		}
     	}
+    	
+    	public void updateMaxScore() {
+    		for (Node n = this; n != null; n = n.parent) {
+    			if (n.parent.maxScore > this.maxScore) 
+    				n.parent.maxScore = this.maxScore;
+    			else 
+    				break;
+    		}
+    	}
+    	
+    	public int maxScoreChildIndex() {
+    		int max = 0;
+    		for (int i = 0; i < this.children.size(); i++) {
+    			if (this.children.get(i).maxScore > this.children.get(max).maxScore) {
+    				max = i;
+    			}
+    		}
+    		return max;
+    	}
+    	
+    	public void showAllChildren() {
+    		for (int i = 0; i < this.children.size(); i++) {
+    			
+    		}
+    	}
     } 
     
     public class AllSearch {
     	private Pack[] packs;
     	private Board board;
     	private int obstacle;
+    	private Node root;
+    	private ArrayDeque<Node> queue;
     	public AllSearch(Pack[] p, Board b, int obstacle) {
     		this.packs = p;
     		this.board = b;
     		this.obstacle = obstacle;
+    		root = new Node(null, null, turn - 1, 0);  //now status
+    		root.setBoard(this.board);
+    		queue = new ArrayDeque<Node>((int)Math.pow(ALL, SIMTIME));
+    		root.addChild();
+    		for (int i = 0; i < root.children.size(); i++) {
+    			queue.addLast(root.children.get(i));
+    		}
+    	}
+    	
+    	public int[] simulateOneTurn(Board board, Pack pack, int[] set) {
+    		board.obstacleNum = pack.fillObstaclePack(board.obstacleNum);
+    		pack.packRotate(set[1]);
+    		board.setPack(pack, set[0]);
+    		return board.howManyChain();
+    	}
+    	
+    	public int[] breadthFirstSearch() {
+    		int[] block;
+    		while (this.queue.size() > 0) {
+    			Node n = this.queue.removeFirst();
+    			Board b = (Board) n.parent.board.clone();
+    			block = this.simulateOneTurn(b, pack[n.turn], n.set);
+    			if (n.deep == 1) {
+    				if (block[0] == 0) {
+    					n.setBoard(b);
+    					n.addChild();
+    					for (int i = 0; i < n.children.size(); i++){
+    						queue.addLast(n.children.get(i));
+    					}
+    				}
+    			} else {
+    				n.maxScore = score(block);
+    				n.updateMaxScore();
+    				n.setBoard(b);
+    				if (n.deep < SIMTIME) {
+    					n.addChild();
+    					for (int i = 0; i < n.children.size(); i++) {
+    						queue.addLast(n.children.get(i));
+    					}
+    				}
+    			}
+    		}
+    		return root.children.get(root.maxScoreChildIndex()).set;
     	}
     	
     	public double chainQuality(int[] block) {
@@ -592,7 +672,7 @@ public class Main {
                 }
                 in.next();
            }
-           int[][] best = new int[2][SIMTIME];
+           int[] best = new int[2];
            while (true) {
                 turn = in.nextInt();
                 millitime = in.nextLong();
@@ -604,20 +684,10 @@ public class Main {
                 	packs[i] = (Pack) pack[turn + i].clone();
                 }
                 AllSearch search = new AllSearch(packs, my, my.obstacleNum);
-                best = search.simulate();
-
-                rot = best[0][0];
-                col = best[1][0];
+                best = search.breadthFirstSearch();
+                col = best[0];
+                rot = best[1];
                 println(col + " " + rot);
-                /*
-                if (best[0].length == 1) {
-                	packs[0].fillObstaclePack(my.obstacleNum);
-                	packs[0].packRotate(rot);
-                	my.setPack(packs[0], col);
-                	my.testHMC();
-                	my.showSimulateBoard();
-                }
-                */
             }
         }
     }
