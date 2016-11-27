@@ -3,7 +3,6 @@ package codevs;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Queue;
 import java.util.Random;
 import java.util.Scanner;
 import java.lang.Math;
@@ -461,7 +460,7 @@ public class Main {
     	int deep;
     	int id;
     	boolean isChain;
-    	int maxScore = 0;
+    	double maxScore = 0;
     	
     	public Node (Node parent, int[] s, int nowTurn, int deep) {
     		this.parent = parent;
@@ -513,7 +512,7 @@ public class Main {
     	public void showAllChildren() {
     		for (int i = 0; i < this.children.size(); i++) {
     			Node child = this.children.get(i);
-    			System.err.printf("id : %2d, maxScore : %3d, children : %2d\n"
+    			System.err.printf("id : %2d, maxScore : %3f, children : %2d\n"
     					,child.id , child.maxScore, child.childCount);
     		}
     	}
@@ -545,27 +544,49 @@ public class Main {
     		return board.howManyChain();
     	}
     	
+    	public int oneBlockFall(Board board) {
+    		int max = 0;
+    		for (int i = 0; i < width; i++) {
+    			for (int j = 0; j < height; j++) {
+    				if (board.simulateBoard[j][i] != 0){
+    					if (j == 0)
+    						break;
+    					
+    					for (int k = 1; k < 9; k++) {
+    						board.simulateBoard[j - 1][i] = k;
+    						int score = score(board.howManyChain());
+    						if (score > max)
+    							max = score;
+    					}
+    				}
+    			}
+    		}
+    		return max;
+    	}
+    	
     	public int[] breadthFirstSearch() {
     		int[] block;
-    		int score = 0;
+    		double score = 0;
     		while (this.queue.size() > 0) {
     			Node n = this.queue.removeFirst();
     			Board b = (Board) n.parent.board.clone();
     			block = this.simulateOneTurn(b, (Pack)pack[n.turn].clone(), n.set);
-    			if (b.dangerZone())
+    			if (b.dangerZone()) {
+    				n.parent.children.remove(n.parent.children.indexOf(n));
     				continue;
-    			score = score(block);
+    			}
+    			score = (double)score(block);
     			if (n.deep == 1) {
     				if (score > FIRE) {
     					return n.set;
     				}
-    				if (score < 2) {
+//    				if (block.length < 2) {
     					n.setBoard(b);
     					n.addChild();
     					for (int i = 0; i < n.children.size(); i++){
     						queue.addLast(n.children.get(i));
     					}
-    				}
+//    				}
     			} else {
     				n.maxScore = score;
     				n.updateMaxScore();
@@ -579,18 +600,27 @@ public class Main {
     			}
     		}
     		root.showAllChildren();
-    		return root.children.get(root.maxScoreChildIndex()).set;
+    		try {
+    			return root.children.get(root.maxScoreChildIndex()).set;
+    		} catch (IndexOutOfBoundsException e) {
+    			int[] s = {0, 0};
+    			return (s);
+    		}
+    		
     	}
     	
     	public double chainQuality(int[] block) {
     		int sum = 0;
-    		double base = 1.05;
+    		double base = 1.01;
     		for (int i = 0; i < block.length; i++) {
-    			sum += Math.pow(base, (block[i] - MINIMUN_CHAIN_BLOCK));
+    			if (block[i] > 0)
+    				sum += Math.pow(base ,block[i] - 2);
+    			else 
+    				break;
     		}
     		if (sum == 0)
     			return 1.0;
-    		return 1.0 / (1 + sum / block.length);
+    		return 1.0 / sum;
     	}
     	
     	public int[][] simulate() {
