@@ -1,6 +1,5 @@
 package codevs;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,8 +22,8 @@ public class Main {
     static final int FIRE = 150;
     static final int MINIMUN_CHAIN_BLOCK = 2;
     static final int ALL = MAXROTATE * MAXPOSITION;
-    static final int DEEP = 10;
-    static final int BEAM_BREADTH = 1000;
+    static final int DEEP = 5;
+    static final int BEAM_BREADTH = 100;
     
     int maxDeep = 0;
     int nodeCount;
@@ -577,8 +576,8 @@ public class Main {
     	
     	public int[] beamSearch() {
     		for (int i = 0; i < DEEP; i++) {
-    			for (int j = 0; j < this.list.size(); i++) {
-    				Node n = this.list.get(i);
+    			for (int j = 0; j < this.list.size(); j++) {
+    				Node n = this.list.get(j);
     				Board b = (Board)n.parent.board.clone();
     				int[] block = this.simulateOneTurn(b, (Pack)pack[n.turn].clone(), n.set);
     				if (b.dangerZone()) {
@@ -605,6 +604,9 @@ public class Main {
     				}
     			}
     			this.list = l;
+    		}
+    		for (int i = 0; i < this.list.size(); i++) {
+    			this.list.get(i).updateMaxScore();
     		}
     		return this.root.children.get(this.root.maxScoreChildIndex()).set;
     	}
