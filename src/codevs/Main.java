@@ -3,6 +3,8 @@ package codevs;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Random;
 import java.util.Scanner;
 import java.lang.Math;
@@ -21,6 +23,8 @@ public class Main {
     static final int FIRE = 150;
     static final int MINIMUN_CHAIN_BLOCK = 2;
     static final int ALL = MAXROTATE * MAXPOSITION;
+    static final int DEEP = 10;
+    static final int BEAM_BREADTH = 1000;
     
     int maxDeep = 0;
     int nodeCount;
@@ -518,22 +522,29 @@ public class Main {
     	}
     } 
     
+    public class NodeComparator implements Comparator<Node> {
+    	@Override
+    	public int compare(Node n1, Node n2) {
+    		return n1.maxScore < n2.maxScore ? -1 : 1;
+    	}
+    }
+    
     public class AllSearch {
     	private Pack[] packs;
     	private Board board;
     	private int obstacle;
     	private Node root;
-    	private ArrayDeque<Node> queue;
+    	private ArrayList<Node> list;
     	public AllSearch(Pack[] p, Board b, int obstacle) {
     		this.packs = p;
     		this.board = b;
     		this.obstacle = obstacle;
     		root = new Node(null, null, turn - 1, 0);  //now status
     		root.setBoard(this.board);
-    		queue = new ArrayDeque<Node>(32);
+    		this.list = new ArrayList<Node>(32);
     		root.addChild();
     		for (int i = 0; i < ALL; i++) {
-    			queue.addLast(root.children.get(i));
+    			this.list.add(root.children.get(i));
     		}
     	}
     	
@@ -564,49 +575,50 @@ public class Main {
     		return max;
     	}
     	
-    	public int[] breadthFirstSearch() {
-    		int[] block;
-    		double score = 0;
-    		while (this.queue.size() > 0) {
-    			Node n = this.queue.removeFirst();
-    			Board b = (Board) n.parent.board.clone();
-    			block = this.simulateOneTurn(b, (Pack)pack[n.turn].clone(), n.set);
-    			if (b.dangerZone()) {
-    				n.parent.children.remove(n.parent.children.indexOf(n));
-    				continue;
-    			}
-    			score = (double)score(block);
-    			if (n.deep == 1) {
-    				if (score > FIRE) {
-    					return n.set;
+    	public int[] beamSearch() {
+    		for (int i = 0; i < DEEP; i++) {
+    			for (int j = 0; j < this.list.size(); i++) {
+    				Node n = this.list.get(i);
+    				Board b = (Board)n.parent.board.clone();
+    				int[] block = this.simulateOneTurn(b, (Pack)pack[n.turn].clone(), n.set);
+    				if (b.dangerZone()) {
+    					n.parent.children.remove(n.parent.children.indexOf(n));
+    					n.parent.childCount--;
+    					continue;
     				}
-//    				if (block.length < 2) {
-    					n.setBoard(b);
-    					n.addChild();
-    					for (int i = 0; i < n.children.size(); i++){
-    						queue.addLast(n.children.get(i));
-    					}
-//    				}
-    			} else {
-    				n.maxScore = score;
-    				n.updateMaxScore();
-    				if (n.deep < SIMTIME) {
-    					n.setBoard(b);
-    					n.addChild();
-    					for (int i = 0; i < ALL; i++) {
-    						queue.addLast(n.children.get(i));
-    					}
+    				n.setBoard(b);
+    				n.maxScore = this.oneBlockFall(b);
+    			}
+    			Collections.sort(this.list, new NodeComparator());
+    			if (this.list.size() > BEAM_BREADTH) {
+    				for (int j = BEAM_BREADTH; j < this.list.size(); j++) {
+    					this.list.remove(j);
     				}
     			}
+    			
+    			ArrayList<Node> l = new ArrayList<Node>(this.list.size() * ALL);
+    			for (int j = 0; j < this.list.size(); j++) {
+    				Node child = this.list.get(j);
+    				child.addChild();
+    				for (int k = 0; k < ALL; k++) {
+    					l.add(child.children.get(k));
+    				}
+    			}
+    			this.list = l;
     		}
-    		root.showAllChildren();
-    		try {
-    			return root.children.get(root.maxScoreChildIndex()).set;
-    		} catch (IndexOutOfBoundsException e) {
-    			int[] s = {0, 0};
-    			return (s);
+    		return this.root.children.get(this.root.maxScoreChildIndex()).set;
+    	}
+    	
+    	public int[] fire() {
+    		for (int i = 0; i < MAXPOSITION; i++) {
+    			for (int j = 0; j < MAXROTATE; j++) {
+    				int[] s = {i, j};
+    				int[] block = this.simulateOneTurn((Board)this.board.clone(), (Pack)pack[turn].clone(), s);
+    				if (score(block) > FIRE)
+    					return s;
+    			}
     		}
-    		
+    		return null;
     	}
     	
     	public double chainQuality(int[] block) {
@@ -726,7 +738,9 @@ public class Main {
             	   packs[i] = (Pack) pack[turn + i].clone();
                }
                AllSearch search = new AllSearch(packs, my, my.obstacleNum);
-               best = search.breadthFirstSearch();
+               best = search.fire();
+               if (best == null)
+            	   best = search.beamSearch();
                col = best[0];
                rot = best[1];
                println(col + " " + rot);
