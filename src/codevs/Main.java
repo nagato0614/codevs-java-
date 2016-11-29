@@ -14,7 +14,7 @@ public class Main {
         new Main().run();
     }
     
-    static final String AI_NAME = "allserach_V2";
+    static final String AI_NAME = "BEAM_SEARCH";
     static final int EMPTY = 0;
     static final int SIMTIME = 3;		//simulating time
     static final int MAXROTATE = 4;
@@ -22,12 +22,13 @@ public class Main {
     static final int FIRE = 150;
     static final int MINIMUN_CHAIN_BLOCK = 2;
     static final int ALL = MAXROTATE * MAXPOSITION;
-    static final int DEEP = 5;
-    static final int BEAM_BREADTH = 100;
+    static final int DEEP = 10;
+    static final int BEAM_BREADTH = 32;
     
     int maxDeep = 0;
     int nodeCount;
     
+    Runtime r = Runtime.getRuntime();
     Random random = new Random();
     int turn = -1;
     Pack[] pack;
@@ -383,7 +384,7 @@ public class Main {
         }
         
         public int[][] copySimulateBoard() {
-        	int[][] res = new int[this.simulateBoard.length][];
+        	int[][] res = new int[this.simulateBoard.length][width];
         	for (int i = 0; i < res.length; i++) {
         		res[i] = Arrays.copyOf(this.simulateBoard[i], width);
         	}
@@ -407,7 +408,7 @@ public class Main {
     
     class Pack implements Cloneable {
 
-    	int[][] pack = new int[width][height];
+    	int[][] pack = new int[packSize][packSize];
     	
     	public void packRotate(int rot) {
     		for (int i = 0; i < rot; i++) {
@@ -521,20 +522,13 @@ public class Main {
     	}
     } 
     
-    public class NodeComparator implements Comparator<Node> {
-    	@Override
-    	public int compare(Node n1, Node n2) {
-    		return n1.maxScore < n2.maxScore ? -1 : 1;
-    	}
-    }
-    
-    public class AllSearch {
+    public class BeamSearch {
     	private Pack[] packs;
     	private Board board;
     	private int obstacle;
     	private Node root;
     	private ArrayList<Node> list;
-    	public AllSearch(Pack[] p, Board b, int obstacle) {
+    	public BeamSearch(Pack[] p, Board b, int obstacle) {
     		this.packs = p;
     		this.board = b;
     		this.obstacle = obstacle;
@@ -551,13 +545,14 @@ public class Main {
     		board.obstacleNum = pack.fillObstaclePack(board.obstacleNum);
     		pack.packRotate(set[1]);
     		board.setPack(pack, set[0]);
+    		pack = null;
     		return board.howManyChain();
     	}
     	
     	public int oneBlockFall(Board board) {
     		int max = 0;
     		for (int i = 0; i < width; i++) {
-    			for (int j = 0; j < height; j++) {
+    			for (int j = 0; j < height + packSize; j++) {
     				if (board.simulateBoard[j][i] != 0){
     					if (j == 0)
     						break;
@@ -576,31 +571,43 @@ public class Main {
     	
     	public int[] beamSearch() {
     		for (int i = 0; i < DEEP; i++) {
+    			//System.err.printf("Deep : %d\n", i);
     			for (int j = 0; j < this.list.size(); j++) {
+    	    		Board b = null;
     				Node n = this.list.get(j);
-    				Board b = (Board)n.parent.board.clone();
-    				int[] block = this.simulateOneTurn(b, (Pack)pack[n.turn].clone(), n.set);
+    				try {
+    					b = (Board)n.parent.board.clone();
+    				} catch (NullPointerException e) {
+    					System.err.printf("set = {%d, %d}, deep : %d\n", n.set[0], n.set[1], n.deep);
+    				}
+    				this.simulateOneTurn(b, (Pack)pack[n.turn].clone(), n.set);
+    				n.setBoard(b);
     				if (b.dangerZone()) {
     					n.parent.children.remove(n.parent.children.indexOf(n));
+    					this.list.remove(j);
     					n.parent.childCount--;
+    					n = null;
     					continue;
     				}
-    				n.setBoard(b);
     				n.maxScore = this.oneBlockFall(b);
+    				b = null;
     			}
-    			Collections.sort(this.list, new NodeComparator());
-    			if (this.list.size() > BEAM_BREADTH) {
-    				for (int j = BEAM_BREADTH; j < this.list.size(); j++) {
-    					this.list.remove(j);
-    				}
-    			}
+    			this.list.sort((a, b) -> (int)(b.maxScore - a.maxScore));
     			
-    			ArrayList<Node> l = new ArrayList<Node>(this.list.size() * ALL);
-    			for (int j = 0; j < this.list.size(); j++) {
-    				Node child = this.list.get(j);
-    				child.addChild();
-    				for (int k = 0; k < ALL; k++) {
-    					l.add(child.children.get(k));
+    			ArrayList<Node> l = new ArrayList<Node>(0);
+    			Node child;
+    			for (int j = 0; j < BEAM_BREADTH; j++) {
+    				try {
+    					child = this.list.get(j);
+    				} catch (IndexOutOfBoundsException e) {
+    					break;
+    				}
+    				//System.err.printf("id : %d, deep : %d, score : %f\n", child.id, child.deep, child.maxScore);
+    				if (child.parent.board != null) {
+    					child.addChild();
+    					for (int k = 0; k < ALL; k++) {
+    						l.add(child.children.get(k));
+    					}
     				}
     			}
     			this.list = l;
@@ -608,6 +615,7 @@ public class Main {
     		for (int i = 0; i < this.list.size(); i++) {
     			this.list.get(i).updateMaxScore();
     		}
+    		this.root.showAllChildren();
     		return this.root.children.get(this.root.maxScoreChildIndex()).set;
     	}
     	
@@ -616,8 +624,10 @@ public class Main {
     			for (int j = 0; j < MAXROTATE; j++) {
     				int[] s = {i, j};
     				int[] block = this.simulateOneTurn((Board)this.board.clone(), (Pack)pack[turn].clone(), s);
-    				if (score(block) > FIRE)
+    				if (score(block) > FIRE) {
+    					System.err.printf("FIRE, SCORE : %d\n", score(block));
     					return s;
+    				}
     			}
     		}
     		return null;
@@ -697,6 +707,12 @@ public class Main {
     	}
     }
     
+    public void garbageCollect() {
+    	System.err.println("before : " + r.totalMemory());
+    	r.gc();
+    	System.err.println("after : " + r.totalMemory());
+    }
+    
     public int[] shinsu(int n, int shinsu) {
     	int x = n;
     	int[] ans = new int[SIMTIME];
@@ -739,13 +755,14 @@ public class Main {
                for (int i = 0; i < SIMTIME; i++) {
             	   packs[i] = (Pack) pack[turn + i].clone();
                }
-               AllSearch search = new AllSearch(packs, my, my.obstacleNum);
+               BeamSearch search = new BeamSearch(packs, my, my.obstacleNum);
                best = search.fire();
                if (best == null)
             	   best = search.beamSearch();
                col = best[0];
                rot = best[1];
                println(col + " " + rot);
+               search = null;
             }
         }
     }
