@@ -17,10 +17,10 @@ public class Main {
 	static final int SIMTIME = 3;		//simulating time
 	static final int MAXROTATE = 4;
 	static final int MAXPOSITION = 8;
-	static final int FIRE = 150;
+	static final int FIRE = 100;
 	static final int MINIMUN_CHAIN_BLOCK = 2;
 	static final int ALL = MAXROTATE * MAXPOSITION;
-	static final int DEEP = 10;
+	static final int DEEP = 15;
 	static final int BEAM_BREADTH = 64;
 
 	int maxDeep = 0;
@@ -594,11 +594,8 @@ public class Main {
 						n = null;
 						continue;
 					}
-					if (i < DEEP - 1) {
-						n.maxScore = this.oneBlockFall(b);
-					} else {
-						n.maxScore = score(block);
-					}
+					n.maxScore = this.oneBlockFall(b);
+					n.updateMaxScore();
 					b = null;
 				}
 				if (i < DEEP - 1) {
@@ -622,9 +619,6 @@ public class Main {
 					}
 					this.list = l;
 				}
-			}
-			for (int i = 0; i < this.list.size(); i++) {
-				this.list.get(i).updateMaxScore();
 			}
 			this.root.showAllChildren();
 			int index = this.root.maxScoreChildIndex();
