@@ -550,11 +550,8 @@ public class Main {
 		public int oneBlockFall(Board board) {
 			int max = 0;
 			for (int i = 0; i < width; i++) {
-				for (int j = 0; j < height + packSize; j++) {
+				for (int j = 1; j < height + packSize; j++) {
 					if (board.simulateBoard[j][i] != 0){
-						if (j == 0)
-							break;
-
 						for (int k = 1; k < 9; k++) {
 							board.simulateBoard[j - 1][i] = k;
 							int score = score(board.howManyChain());
@@ -603,12 +600,10 @@ public class Main {
 
 					ArrayList<Node> l = new ArrayList<Node>(0);
 					Node child;
-					for (int j = 0; j < BEAM_BREADTH; j++) {
-						try {
-							child = this.list.get(j);
-						} catch (IndexOutOfBoundsException e) {
+					for (int j = 0; j < this.list.size(); j++) {
+						if (j >= BEAM_BREADTH)
 							break;
-						}
+						child = this.list.get(j);
 						//System.err.printf("id : %d, deep : %d, score : %f\n", child.id, child.deep, child.maxScore);
 						if (child.parent.board != null) {
 							child.addChild();
