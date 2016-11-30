@@ -21,7 +21,7 @@ public class Main {
 	static final int MINIMUN_CHAIN_BLOCK = 2;
 	static final int ALL = MAXROTATE * MAXPOSITION;
 	static final int DEEP = 10;
-	static final int BEAM_BREADTH = 32;
+	static final int BEAM_BREADTH = 100;
 
 	int maxDeep = 0;
 	int nodeCount;
@@ -573,16 +573,7 @@ public class Main {
 					Node n = this.list.get(j);
 					if (n.turn >= maxTurn)
 						break;
-//					if (n.parent.board == null) {
-//						System.err.printf("list : %d, size : %d\n", j, this.list.size());
-//					break;
-//					}
-//					try {
-						b = (Board)n.parent.board.clone();
-//					} catch (NullPointerException e) {
-//						System.err.printf("list : %d, size : %d\n", j, this.list.size());
-//						continue;
-//					}
+					b = (Board)n.parent.board.clone();
 					block = this.simulateOneTurn(b, (Pack)pack[n.turn].clone(), n.set);
 					if (b.dangerZone()) {
 						n.parent.children.remove(n.parent.children.indexOf(n));
@@ -606,7 +597,6 @@ public class Main {
 						if (j >= BEAM_BREADTH)
 							break;
 						child = this.list.get(j);
-						//System.err.printf("id : %d, deep : %d, score : %f\n", child.id, child.deep, child.maxScore);
 						if (child.parent.board != null) {
 							child.addChild();
 							for (int k = 0; k < ALL; k++) {
