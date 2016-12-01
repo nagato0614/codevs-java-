@@ -22,8 +22,8 @@ public class Main {
 	static final int FIRE = 150;
 	static final int MINIMUN_CHAIN_BLOCK = 2;
 	static final int ALL = MAXROTATE * MAXPOSITION;
-	static final int DEEP = 10;
-	static final int BEAM_BREADTH = 100;
+	static final int DEEP = 5;
+	static final int BEAM_BREADTH = 12;
 
 	int maxDeep = 0;
 	int nodeCount;
@@ -450,12 +450,13 @@ public class Main {
 		public int oneBlockFall(Board board) {
 			int max = 0;
 			int[] maxBlock = {0};
-			for (int i = 0; i < width; i++) {
+			for (int i = 5; i < 6; i++) {
 				for (int j = 1; j < height + packSize; j++) {
 					if (board.simulateBoard[j][i] != 0){
 						for (int k = 1; k < 9; k++) {
-							board.simulateBoard[j - 1][i] = k;
-							int[] nowBlock = board.howManyChain();
+							Board b = (Board)board.clone();
+							b.simulateBoard[j - 1][i] = k;
+							int[] nowBlock = b.howManyChain();
 							int score = score(nowBlock);
 							if (score > max) {
 								max = score;
@@ -467,7 +468,7 @@ public class Main {
 			}
 			return max + maxBlock.length * 5;
 		}
-
+		
 		public int[] beamSearch() {
 			int[] block;
 			for (int i = 0; i < DEEP; i++) {
