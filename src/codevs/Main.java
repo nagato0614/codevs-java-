@@ -449,19 +449,23 @@ public class Main {
 
 		public int oneBlockFall(Board board) {
 			int max = 0;
+			int[] maxBlock = {0};
 			for (int i = 0; i < width; i++) {
 				for (int j = 1; j < height + packSize; j++) {
 					if (board.simulateBoard[j][i] != 0){
 						for (int k = 1; k < 9; k++) {
 							board.simulateBoard[j - 1][i] = k;
-							int score = score(board.howManyChain());
-							if (score > max)
+							int[] nowBlock = board.howManyChain();
+							int score = score(nowBlock);
+							if (score > max) {
 								max = score;
+								maxBlock = nowBlock;
+							}
 						}
 					}
 				}
 			}
-			return max;
+			return max + maxBlock.length * 5;
 		}
 
 		public int[] beamSearch() {
