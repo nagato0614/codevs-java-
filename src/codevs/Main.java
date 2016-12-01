@@ -2,6 +2,8 @@ package codevs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Random;
 import java.util.Scanner;
 import java.lang.Math;
@@ -17,7 +19,7 @@ public class Main {
 	static final int SIMTIME = 3;		//simulating time
 	static final int MAXROTATE = 4;
 	static final int MAXPOSITION = 8;
-	static final int FIRE = 100;
+	static final int FIRE = 150;
 	static final int MINIMUN_CHAIN_BLOCK = 2;
 	static final int ALL = MAXROTATE * MAXPOSITION;
 	static final int DEEP = 10;
@@ -520,6 +522,13 @@ public class Main {
 		}
 	} 
 
+	public class NodeComparator implements Comparator<Node> {
+		@Override
+		public int compare(Node a, Node b) {
+			return a.maxScore >= b.maxScore ? 1 : 0;
+		}
+	}
+	
 	public class BeamSearch {
 		private Pack[] packs;
 		private Board board;
@@ -576,7 +585,7 @@ public class Main {
 					b = (Board)n.parent.board.clone();
 					block = this.simulateOneTurn(b, (Pack)pack[n.turn].clone(), n.set);
 					if (b.dangerZone()) {
-						n.parent.children.remove(n.parent.children.indexOf(n));
+						n.parent.children.remove(n);
 						this.list.remove(j);
 						n.parent.childCount--;
 						n = null;
@@ -584,24 +593,27 @@ public class Main {
 						continue;
 					}
 					n.setBoard(b);
-					n.maxScore = this.oneBlockFall(b);
+					n.maxScore = this.oneBlockFall(b) / (1.0 + (n.turn - turn) / 2.0);
 					n.updateMaxScore();
 					b = null;
 				}
 				if (i < DEEP - 1) {
-					this.list.sort((a, b) -> (int)(b.maxScore - a.maxScore));
+					//this.list.sort((a, b) -> (b.maxScore - a.maxScore));
+					Collections.sort(this.list, new NodeComparator());
 
-					ArrayList<Node> l = new ArrayList<Node>(0);
+					ArrayList<Node> l;
+					if (this.list.size() > BEAM_BREADTH)
+						l = new ArrayList<Node>(BEAM_BREADTH * ALL);
+					else 
+						l = new ArrayList<Node>(this.list.size() * ALL);
 					Node child;
 					for (int j = 0; j < this.list.size(); j++) {
 						if (j >= BEAM_BREADTH)
 							break;
 						child = this.list.get(j);
-						if (child.parent.board != null) {
-							child.addChild();
-							for (int k = 0; k < ALL; k++) {
-								l.add(child.children.get(k));
-							}
+						child.addChild();
+						for (int k = 0; k < ALL; k++) {
+							l.add(child.children.get(k));
 						}
 					}
 					this.list = l;
