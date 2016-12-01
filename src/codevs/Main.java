@@ -23,7 +23,7 @@ public class Main {
 	static final int MINIMUN_CHAIN_BLOCK = 2;
 	static final int ALL = MAXROTATE * MAXPOSITION;
 	static final int DEEP = 10;
-	static final int BEAM_BREADTH = 150;
+	static final int BEAM_BREADTH = 100;
 
 	int maxDeep = 0;
 	int nodeCount;
@@ -83,11 +83,18 @@ public class Main {
 
 		public void setPack(Pack p, int setPos) {
 			for (int i = 0; i < packSize; i++) {
-				for (int j = 0; j < packSize; j++) {
-					this.simulateBoard[i][j + setPos] = p.pack[i][j];
+				for (int j = height + packSize - 1; j >= 0; j--) {
+					if (this.simulateBoard[j][setPos + i] == EMPTY) {
+						for (int k = packSize - 1; k >= 0; k--) {
+							if (p.pack[k][i] != EMPTY) {
+								this.simulateBoard[j][setPos + i] = p.pack[k][i];
+								j--;
+							}
+						}
+						break;
+					}
 				}
 			}
-			this.fallBlock();
 		}
 
 		public int[] howManyChain() {
