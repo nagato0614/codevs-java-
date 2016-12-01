@@ -23,7 +23,7 @@ public class Main {
 	static final int MINIMUN_CHAIN_BLOCK = 2;
 	static final int ALL = MAXROTATE * MAXPOSITION;
 	static final int DEEP = 10;
-	static final int BEAM_BREADTH = 100;
+	static final int BEAM_BREADTH = 150;
 
 	int maxDeep = 0;
 	int nodeCount;
@@ -93,11 +93,10 @@ public class Main {
 		public int[] howManyChain() {
 			int sum = 0;
 			ArrayList<Integer> block = new ArrayList<Integer>(1);
-			block.add(this.deleteBlock());
+			block.add(this.deleteBlock(0));
 			while (block.get(sum) > 0) {
 				sum++;
-				this.fallBlock();
-				block.add(this.deleteBlock());
+				block.add(this.deleteBlock(this.fallBlock()));
 			}
 			int[] b = new int[block.size()];
 			for (int i = 0; i < block.size() - 1; i ++) {
@@ -106,8 +105,9 @@ public class Main {
 			return b;
 		}
 
-		public void fallBlock() {
+		public int fallBlock() {
 			boolean flag = false;
+			int maxHeight = height + packSize;
 			while (true) {
 				int sum = 0;
 				for (int i = 0; i < width; i++) {
@@ -126,18 +126,21 @@ public class Main {
 						}
 						if (flag) 
 							break;
+						if (j < maxHeight)
+							maxHeight = j;
 					}
 				}
 				if (sum == 0)
 					break;
 			}
+			return maxHeight;
 		}
 
-		public int deleteBlock() {
+		public int deleteBlock(int height) {
 			int deleteCount = 0;
 			int sum = 0;
 			boolean[] flag = new boolean[4];
-			for (int i = this.simulateBoard.length - 1; i > 0; i--) {
+			for (int i = this.simulateBoard.length - 1; i >= height; i--) {
 				for (int j = 0; j < width - 1; j++) {
 					//when there is no block or obstacle
 					if (this.simulateBoard[i][j] == 0 || this.simulateBoard[i][j] == obstacle) 
