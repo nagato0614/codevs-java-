@@ -19,10 +19,10 @@ public class Main {
 	static final int SIMTIME = 3;		//simulating time
 	static final int MAXROTATE = 4;
 	static final int MAXPOSITION = 8;
-	static final int FIRE = 150;
+	static final int FIRE = 200;
 	static final int MINIMUN_CHAIN_BLOCK = 2;
 	static final int ALL = MAXROTATE * MAXPOSITION;
-	static final int DEEP = 5;
+	static final int DEEP = 4;
 	static final int BEAM_BREADTH = 12;
 
 	int maxDeep = 0;
@@ -105,7 +105,7 @@ public class Main {
 				sum++;
 				block.add(this.deleteBlock(this.fallBlock()));
 			}
-			int[] b = new int[block.size()];
+			int[] b = new int[block.size() - 1];
 			for (int i = 0; i < block.size() - 1; i ++) {
 				b[i] = block.get(i);
 			}
@@ -447,10 +447,18 @@ public class Main {
 			return board.howManyChain();
 		}
 
-		public int oneBlockFall(Board board) {
+		public double chainAve(int[] block) {
+			int sum = 0;
+			for (int i = 0; i < block.length; i++) {
+				sum += block[i];
+			}
+			return (double)sum / (double)block.length;
+		}
+		
+		public double oneBlockFall(Board board) {
 			int max = 0;
 			int[] maxBlock = {0};
-			for (int i = 5; i < 6; i++) {
+			for (int i = 5; i <6 ; i++) {
 				for (int j = 1; j < height + packSize; j++) {
 					if (board.simulateBoard[j][i] != 0){
 						for (int k = 1; k < 9; k++) {
@@ -466,7 +474,7 @@ public class Main {
 					}
 				}
 			}
-			return max + maxBlock.length * 5;
+			return (max * 0.5 + maxBlock.length) / Math.pow(1.1, this.chainAve(maxBlock) - 2.0);
 		}
 		
 		public int[] beamSearch() {
@@ -489,7 +497,8 @@ public class Main {
 						continue;
 					}
 					n.setBoard(b);
-					n.maxScore = this.oneBlockFall(b) / (1.0 + (n.turn - turn) / 2.0);
+					//n.maxScore = this.oneBlockFall(b) / (1.0 + (n.turn - turn) / 0.1);
+					n.maxScore = this.oneBlockFall(b) / Math.pow(1.5, (n.turn - turn));
 					n.updateMaxScore();
 					b = null;
 				}
