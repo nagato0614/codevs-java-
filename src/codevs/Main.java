@@ -19,11 +19,11 @@ public class Main {
 	static final int SIMTIME = 3;		//simulating time
 	static final int MAXROTATE = 4;
 	static final int MAXPOSITION = 8;
-	static final int FIRE = 200;
+	static final int FIRE = 150;
 	static final int MINIMUN_CHAIN_BLOCK = 2;
 	static final int ALL = MAXROTATE * MAXPOSITION;
 	static final int DEEP = 4;
-	static final int BEAM_BREADTH = 12;
+	static final int BEAM_BREADTH = 100;
 
 	int maxDeep = 0;
 	int nodeCount;
@@ -356,6 +356,7 @@ public class Main {
 		int id;
 		boolean isChain;
 		double maxScore = 0;
+		double value = 0.0;
 
 		public Node (Node parent, int[] s, int nowTurn, int deep) {
 			this.parent = parent;
@@ -416,7 +417,7 @@ public class Main {
 	public class NodeComparator implements Comparator<Node> {
 		@Override
 		public int compare(Node a, Node b) {
-			return a.maxScore >= b.maxScore ? 1 : 0;
+			return a.value >= b.value ? 1 : 0;
 		}
 	}
 	
@@ -474,7 +475,7 @@ public class Main {
 					}
 				}
 			}
-			return (max * 0.5 + maxBlock.length) / Math.pow(1.1, this.chainAve(maxBlock) - 2.0);
+			return (max * 0.9 + maxBlock.length) / Math.pow(2.0, this.chainAve(maxBlock) - 2.0);
 		}
 		
 		public int[] beamSearch() {
@@ -497,8 +498,8 @@ public class Main {
 						continue;
 					}
 					n.setBoard(b);
-					//n.maxScore = this.oneBlockFall(b) / (1.0 + (n.turn - turn) / 0.1);
-					n.maxScore = this.oneBlockFall(b) / Math.pow(1.5, (n.turn - turn));
+					n.value = this.oneBlockFall(b);
+					n.maxScore = this.next((Board)b.clone(), n.turn + 1);
 					n.updateMaxScore();
 					b = null;
 				}
@@ -527,6 +528,20 @@ public class Main {
 			this.root.showAllChildren();
 			int index = this.root.maxScoreChildIndex();
 			return this.root.children.get(index).set;
+		}
+		
+		public int next(Board nowBoard, int nextTurn) {
+			int max = 0;
+			for (int i = 0; i < MAXPOSITION; i++) {
+				for (int j = 0; j < MAXROTATE; j++) {
+					int[] set = {i, j};
+					int score = score(this.simulateOneTurn((Board)nowBoard.clone(), (Pack)pack[nextTurn].clone(), set));
+					if (score > max) {
+						max = score;
+					}
+				}
+			}
+			return max;
 		}
 
 		public int[] fire() {
