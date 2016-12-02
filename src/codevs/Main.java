@@ -23,7 +23,7 @@ public class Main {
 	static final int MINIMUN_CHAIN_BLOCK = 2;
 	static final int ALL = MAXROTATE * MAXPOSITION;
 	static final int DEEP = 4;
-	static final int BEAM_BREADTH = 100;
+	static final int BEAM_BREADTH = 20;
 
 	int maxDeep = 0;
 	int nodeCount;
@@ -459,7 +459,7 @@ public class Main {
 		public double oneBlockFall(Board board) {
 			int max = 0;
 			int[] maxBlock = {0};
-			for (int i = 5; i <6 ; i++) {
+			for (int i = 0; i < 1 ; i++) {
 				for (int j = 1; j < height + packSize; j++) {
 					if (board.simulateBoard[j][i] != 0){
 						for (int k = 1; k < 9; k++) {
@@ -475,7 +475,7 @@ public class Main {
 					}
 				}
 			}
-			return (max * 0.9 + maxBlock.length) / Math.pow(2.0, this.chainAve(maxBlock) - 2.0);
+			return (max * 0.5 + maxBlock.length) / Math.pow(2.0, this.chainAve(maxBlock) - 2.0);
 		}
 		
 		public int[] beamSearch() {
@@ -498,8 +498,9 @@ public class Main {
 						continue;
 					}
 					n.setBoard(b);
-					n.value = this.oneBlockFall(b);
-					n.maxScore = this.next((Board)b.clone(), n.turn + 1);
+					n.value = this.oneBlockFall(b) + + this.boardScore(b);
+					//n.maxScore = this.next((Board)b.clone(), n.turn + 1);
+					n.maxScore = n.value;
 					n.updateMaxScore();
 					b = null;
 				}
@@ -527,15 +528,44 @@ public class Main {
 			}
 			this.root.showAllChildren();
 			int index = this.root.maxScoreChildIndex();
+			System.err.println("maxScore : " + this.root.children.get(index).maxScore);
 			return this.root.children.get(index).set;
+		}
+		
+		public double boardScore(Board b) {
+			double sum = 0;
+			double score = 10.0;
+			for (int i = 0; i < width; i++) {
+				for (int j = height + packSize - 1; j > 1; j--) {
+					if (b.simulateBoard[j][i] != EMPTY) {
+						if (b.simulateBoard[j][i] + b.simulateBoard[j - 2][i] == summation)
+							sum += score;
+						
+						if (i - 2 > 0) {
+							if (b.simulateBoard[j - 2][i - 2] + b.simulateBoard[j][i] == summation)
+								sum += score;
+						}
+						
+						if (i + 2 < width) {
+							if (b.simulateBoard[j][i] + b.simulateBoard[j - 2][i + 2] == summation) 
+								sum += score;
+						}
+					}
+				}
+			}
+			return sum;
 		}
 		
 		public int next(Board nowBoard, int nextTurn) {
 			int max = 0;
 			for (int i = 0; i < MAXPOSITION; i++) {
 				for (int j = 0; j < MAXROTATE; j++) {
+					Board b = (Board)nowBoard.clone();
 					int[] set = {i, j};
-					int score = score(this.simulateOneTurn((Board)nowBoard.clone(), (Pack)pack[nextTurn].clone(), set));
+					int score = score(this.simulateOneTurn(b, (Pack)pack[nextTurn].clone(), set));
+					if (b.dangerZone()) {
+						continue;
+					}
 					if (score > max) {
 						max = score;
 					}
@@ -556,79 +586,6 @@ public class Main {
 				}
 			}
 			return null;
-		}
-
-		public double chainQuality(int[] block) {
-			int sum = 0;
-			double base = 1.01;
-			for (int i = 0; i < block.length; i++) {
-				if (block[i] > 0)
-					sum += Math.pow(base ,block[i] - 2);
-				else 
-					break;
-			}
-			if (sum == 0)
-				return 1.0;
-			return 1.0 / sum;
-		}
-
-		public int[][] simulate() {
-			boolean insuranceFlag = true;
-			double maxScore = 0;
-			double nowScore = 0;
-			int[] rotate;
-			int[] position;
-			int[][] best = new int[2][SIMTIME];
-			int[][] insurance = new int[2][SIMTIME];
-			for (int i = 0; i < (int)Math.pow(8, SIMTIME); i++) {
-				position = shinsu(i, 8);
-
-				for (int j = 0; j < (int)Math.pow(4, SIMTIME); j++) {
-					rotate = shinsu(j, 4);
-					Board b = (Board) this.board.clone();
-					int ojama = this.obstacle;
-					nowScore = 0;
-
-					for (int k = 0; k < SIMTIME; k++ ) {
-						Pack nowPack = (Pack)this.packs[k].clone();
-						if (ojama > 0) {
-							ojama = nowPack.fillObstaclePack(ojama);
-						}
-						nowPack.packRotate(rotate[k]);
-						b.setPack(nowPack, position[k]);
-						int[] block = b.howManyChain();
-						nowScore = score(block);
-						if (b.dangerZone()) {
-							break;
-						}
-						if (nowScore > FIRE && k == 0) {
-							int[][] fire = {{rotate[0]}, {position[0]}};
-							//System.err.printf("rota:%d, pos:%d, Score:%d\n", rotate[0], position[0], nowScore);
-							//debugArray(block);
-							return fire;
-						}
-
-						if (!b.dangerZone() && k == SIMTIME - 1 && insuranceFlag){
-							insurance[0] = Arrays.copyOf(rotate, rotate.length);
-							insurance[1] = Arrays.copyOf(position, position.length);
-							insuranceFlag = false;
-						}
-
-						//nowScore *= this.chainQuality(block);
-						if (nowScore > maxScore) {
-							maxScore = nowScore;
-							best[0] = Arrays.copyOf(rotate, rotate.length);
-							best[1] = Arrays.copyOf(position, position.length);
-						}
-					}
-				}
-			}
-			//System.err.printf("turn : %d, score : %d\n", turn, maxScore);
-			if (maxScore <= 0) {
-				return insurance;
-			}
-			System.err.printf("maxScore : %f\n", maxScore);
-			return best;
 		}
 	}
 
