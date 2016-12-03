@@ -18,7 +18,7 @@ public class Main {
     static final int SIMTIME = 3;		//simulating time
     static final int MAXROTATE = 4;
     static final int MAXPOSITION = 8;
-    static final int FIRE = 150;
+    static final int FIRE = 300;
     static final int MINIMUN_CHAIN_BLOCK = 2;
     static final int ALL = MAXROTATE * MAXPOSITION;
     
@@ -38,6 +38,7 @@ public class Main {
     int[] rott;
     Board my;
     Board op;
+    int miniFire = 0;
 
     class Board implements Cloneable {
 
@@ -469,9 +470,16 @@ public class Main {
     			}
     			
     			if (n.deep == 1) {
-    				if (score > FIRE) {
-    					System.err.println("FIRE");
-    					return n.set;
+    				if (miniFire != 0) {
+    					if (score > miniFire) {
+    						System.err.println("FIRE");
+    						return n.set;
+    					}
+    				} else {
+    					if (score > FIRE) {
+    						System.err.println("FIRE");
+    						return n.set;
+    					}
     				}
 //    				if (block.length < 2) {
     					n.setBoard(b);
@@ -617,6 +625,9 @@ public class Main {
                Pack[] packs = new Pack[SIMTIME];
                for (int i = 0; i < SIMTIME; i++) {
             	   packs[i] = (Pack) pack[turn + i].clone();
+               }
+               if (my.obstacleNum > 10) {
+            	   miniFire = 5 * 10;
                }
                AllSearch search = new AllSearch(packs, my, my.obstacleNum);
                best = search.breadthFirstSearch();
