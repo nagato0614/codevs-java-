@@ -15,10 +15,10 @@ public class Main {
     
     static final String AI_NAME = "allserach_V2";
     static final int EMPTY = 0;
-    static final int SIMTIME = 4;		//simulating time
+    static final int SIMTIME = 3;		//simulating time
     static final int MAXROTATE = 4;
     static final int MAXPOSITION = 8;
-    static final int FIRE = 150;
+    static final int FIRE = 200;
     static final int MINIMUN_CHAIN_BLOCK = 2;
     static final int ALL = MAXROTATE * MAXPOSITION;
     
@@ -463,13 +463,14 @@ public class Main {
     			Board b = (Board) n.parent.board.clone();
     			block = this.simulateOneTurn(b, (Pack)pack[n.turn].clone(), n.set);
     			score = (double)score(block);
-    			if (b.dangerZone() || score > 3) {
+    			if (b.dangerZone()) {
     				n.parent.children.remove(n);
     				continue;
     			}
     			
     			if (n.deep == 1) {
     				if (score > FIRE) {
+    					System.err.println("FIRE");
     					return n.set;
     				}
 //    				if (block.length < 2) {
@@ -480,7 +481,7 @@ public class Main {
     					}
 //    				}
     			} else {
-    				n.maxScore = score;
+    				n.maxScore = score / Math.pow(1.1, n.deep);
     				n.updateMaxScore();
     				if (n.deep < SIMTIME) {
     					n.setBoard(b);
