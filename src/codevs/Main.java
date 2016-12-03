@@ -15,7 +15,7 @@ public class Main {
     
     static final String AI_NAME = "allserach_V2";
     static final int EMPTY = 0;
-    static final int SIMTIME = 3;		//simulating time
+    static final int SIMTIME = 4;		//simulating time
     static final int MAXROTATE = 4;
     static final int MAXPOSITION = 8;
     static final int FIRE = 150;
@@ -77,186 +77,77 @@ public class Main {
         	}
         }
         
-        public void setPack(Pack p, int setPos) {
-        	for (int i = 0; i < packSize; i++) {
-        		for (int j = 0; j < packSize; j++) {
-        			this.simulateBoard[i][j + setPos] = p.pack[i][j];
-        		}
-        	}
-        	this.fallBlock();
-        }
+		public void setPack(Pack p, int setPos) {
+			for (int i = 0; i < packSize; i++) {
+				for (int j = height + packSize - 1; j >= 0; j--) {
+					if (this.simulateBoard[j][setPos + i] == EMPTY) {
+						for (int k = packSize - 1; k >= 0; k--) {
+							if (p.pack[k][i] != EMPTY) {
+								this.simulateBoard[j][setPos + i] = p.pack[k][i];
+								j--;
+							}
+						}
+						break;
+					}
+				}
+			}
+		}
         
-        public int[] testHMC() {
-        	int sum = 0;
-        	ArrayList<Integer> block = new ArrayList<Integer>(1);
-        	block.add(this.deleteBlock());
-        	while (block.get(sum) > 0) {
-        		//this.showSimulateBoard();
-        		sum++;
-        		this.fallBlock();
-        		block.add(this.deleteBlock());
-        	}
-        	int[] b = new int[block.size()];
-        	for (int i = 0; i < block.size(); i ++) {
-        		b[i] = block.get(i);
-        	}
-        	return b;
-        }
+		public int[] howManyChain() {
+			int sum = 0;
+			ArrayList<Integer> block = new ArrayList<Integer>(1);
+			block.add(this.deleteBlock(0));
+			while (block.get(sum) > 0) {
+				sum++;
+				block.add(this.deleteBlock(this.fallBlock()));
+			}
+			int[] b = new int[block.size() - 1];
+			for (int i = 0; i < block.size() - 1; i ++) {
+				b[i] = block.get(i);
+			}
+			return b;
+		}
         
-        public int testDeleteBlock() {
-        	int deleteCount = 0;
-        	int sum = 0;
-        	boolean[] flag = new boolean[4];
-        	for (int i = this.simulateBoard.length - 1; i > 0; i--) {
-        		for (int j = 0; j < width - 1; j++) {
-        			//when there is no block or obstacle
-        			if (this.simulateBoard[i][j] == 0 || this.simulateBoard[i][j] == obstacle) 
-        				continue;
-        			
-        			//reset flag
-        			for (int k = 0; k < flag.length; k++) 
-        				flag[k] = true;
-        			
-        			for (int x = 2; x <= summation; x++) {
-        				//horizontal
-        				if (j + (x - 1) < width && flag[0]) {
-        					sum = 0;
-        					for (int k = 0; k < x; k++) {
-        						if (this.simulateBoard[i][j + k] != 0) {
-        							sum += Math.abs(this.simulateBoard[i][j + k]);
-        						} else {
-        							flag[0] = false;
-        							break;
-        						}
-        						if (sum > summation)
-        							break;
-        					}
-        					if (flag[0] && sum == summation) {
-        						for (int k = 0; k < x; k++) {
-        							deleteCount++;
-        							this.simulateBoard[i][j + k] = -Math.abs(this.simulateBoard[i][j + k]);
-        						}
-        					}
-        				}
-        				
-        				//vertical
-        				if (i - (x - 1) > 0 && flag[1]) {
-        					sum = 0;
-        					for (int k = 0; k < x; k++) {
-        						if (this.simulateBoard[i - k][j] != 0) {
-        							sum += Math.abs(this.simulateBoard[i - k][j]);
-        						} else {
-        							flag[1] = false;
-        							break;
-        						}
-        						if (sum > summation)
-        							break;
-        					}
-        					if (flag[1] && sum == summation) {
-        						for (int k = 0; k < x; k++) {
-        							deleteCount++;
-        							this.simulateBoard[i - k][j] = -Math.abs(this.simulateBoard[i - k][j]);
-        						}
-        					}
-        				}
-        				
-        				//diagonally to the right
-        				if (flag[2] && i - (x - 1) > 0 && j + (x - 1) < width) {
-        					sum = 0;
-        					for (int k = 0; k < x; k++) {
-        						if (this.simulateBoard[i - k][j + k] != 0) {
-        							sum += Math.abs(this.simulateBoard[i - k][j + k]);
-        						} else {
-        							flag[2] = false;
-        							break;
-        						}
-        						if (sum > summation)
-        							break;
-        					}
-        					if (flag[2] && sum == summation) {
-        						for (int k = 0; k < x; k++) {
-        							deleteCount++;
-        							this.simulateBoard[i - k][j + k] = -Math.abs(this.simulateBoard[i - k][j + k]);
-        						}
-        					}
-        				}
-        				
-        				//diagonally to the left
-        				if (flag[3] && i - (x - 1) > 0 && j - (x - 1) >= 0) {
-        					sum = 0;
-        					for (int k = 0; k < x; k++) {
-        						if (this.simulateBoard[i - k][j - k] != 0) { 
-        							sum += Math.abs(this.simulateBoard[i - k][j - k]);
-        						} else {
-        							flag[3] = false;
-        							break;
-        						}
-        						if (sum > summation)
-        							break;
-        					}
-        					if (flag[3] && sum == summation) {
-        						for (int k = 0; k < x; k++) {
-        							deleteCount++;
-        							this.simulateBoard[i - k][j - k] = -Math.abs(this.simulateBoard[i - k][j - k]);
-        						}
-        					}
-        				}
-        			}
-        		}
-        	}
-        	this.showSimulateBoard();
-        	for (int i = 0; i < this.simulateBoard.length; i++) {
-        		for (int j = 0; j < width; j ++) {
-        			if (this.simulateBoard[i][j] < 0) {
-        				this.simulateBoard[i][j] = EMPTY;
-        			}
-        		}
-        	}
-        	return deleteCount;
-        }
+		public int fallBlock() {
+			boolean flag = false;
+			int maxHeight = height + packSize;
+			while (true) {
+				int sum = 0;
+				for (int i = 0; i < width; i++) {
+					flag = false;
+					for (int j = height + packSize - 1; j > 0; j--) {
+						if (this.simulateBoard[j][i] == EMPTY) {
+							for (int k = j - 1; k >= 0; k--) {
+								if (this.simulateBoard[k][i] != EMPTY) {
+									this.simulateBoard[j][i] = this.simulateBoard[k][i];
+									this.simulateBoard[k][i] = EMPTY;
+									break;
+								}
+								if (k == 0)
+									flag = true;
+							}
+						}
+						if (flag) 
+							break;
+						if (j < maxHeight)
+							maxHeight = j;
+					}
+				}
+				if (sum == 0)
+					break;
+			}
+			return maxHeight;
+		}
         
-        public int[] howManyChain() {
-        	int sum = 0;
-        	ArrayList<Integer> block = new ArrayList<Integer>(1);
-        	block.add(this.deleteBlock());
-        	while (block.get(sum) > 0) {
-        		sum++;
-        		this.fallBlock();
-        		block.add(this.deleteBlock());
-        	}
-        	int[] b = new int[block.size()];
-        	for (int i = 0; i < block.size() - 1; i ++) {
-        		b[i] = block.get(i);
-        	}
-        	return b;
-        }
-        
-        public void fallBlock() {
-        	while (true) {
-        		int sum = 0;
-        		for (int i = this.simulateBoard.length - 1; i > 0; i--) {
-        			for (int j = 0; j < width; j++) {
-        				if (this.simulateBoard[i][j] == 0 && this.simulateBoard[i - 1][j] > 0) {
-        					sum++;
-        					this.simulateBoard[i][j] = this.simulateBoard[i - 1][j];
-        					this.simulateBoard[i - 1][j] = 0;
-        				}	
-        			}
-        		}
-        		if (sum == 0)
-        			break;
-        	}
-        }
-        
-        public int deleteBlock() {
-        	int deleteCount = 0;
-        	int sum = 0;
-        	boolean[] flag = new boolean[4];
-        	for (int i = this.simulateBoard.length - 1; i > 0; i--) {
-        		for (int j = 0; j < width - 1; j++) {
-        			//when there is no block or obstacle
-        			if (this.simulateBoard[i][j] == 0 || this.simulateBoard[i][j] == obstacle) 
-        				continue;
+		public int deleteBlock(int height) {
+			int deleteCount = 0;
+			int sum = 0;
+			boolean[] flag = new boolean[4];
+			for (int i = this.simulateBoard.length - 1; i >= height; i--) {
+				for (int j = 0; j < width - 1; j++) {
+					//when there is no block or obstacle
+					if (this.simulateBoard[i][j] == 0 || this.simulateBoard[i][j] == obstacle) 
+						continue;
         			
         			//reset flag
         			for (int k = 0; k < flag.length; k++) 
@@ -571,11 +462,12 @@ public class Main {
     			Node n = this.queue.removeFirst();
     			Board b = (Board) n.parent.board.clone();
     			block = this.simulateOneTurn(b, (Pack)pack[n.turn].clone(), n.set);
-    			if (b.dangerZone()) {
-    				n.parent.children.remove(n.parent.children.indexOf(n));
+    			score = (double)score(block);
+    			if (b.dangerZone() || score > 3) {
+    				n.parent.children.remove(n);
     				continue;
     			}
-    			score = (double)score(block);
+    			
     			if (n.deep == 1) {
     				if (score > FIRE) {
     					return n.set;
