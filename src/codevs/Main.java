@@ -18,7 +18,7 @@ public class Main {
     static final int SIMTIME = 3;		//simulating time
     static final int MAXROTATE = 4;
     static final int MAXPOSITION = 8;
-    static final int FIRE = 200;
+    static final int FIRE = 150;
     static final int MINIMUN_CHAIN_BLOCK = 2;
     static final int ALL = MAXROTATE * MAXPOSITION;
     
@@ -481,7 +481,7 @@ public class Main {
     					}
 //    				}
     			} else {
-    				n.maxScore = score / Math.pow(1.1, n.deep);
+    				n.maxScore = (score / Math.pow(1.1, n.deep));
     				n.updateMaxScore();
     				if (n.deep < SIMTIME) {
     					n.setBoard(b);
@@ -503,17 +503,17 @@ public class Main {
     	}
     	
     	public double chainQuality(int[] block) {
+    		if (block.length == 0)
+    			return 1.0;
     		int sum = 0;
     		double base = 1.01;
     		for (int i = 0; i < block.length; i++) {
     			if (block[i] > 0)
-    				sum += Math.pow(base ,block[i] - 2);
+    				sum += block[i];
     			else 
     				break;
     		}
-    		if (sum == 0)
-    			return 1.0;
-    		return 1.0 / sum;
+    		return Math.pow(1.00000001, sum / block.length - 2);
     	}
     	
     	public int[][] simulate() {
