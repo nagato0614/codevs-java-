@@ -1,5 +1,4 @@
-
-
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -12,11 +11,18 @@ public class Main {
         new Main().run();
     }
     
-    static final String AI_NAME = "allserach";
+    static final String AI_NAME = "allserach_V2";
     static final int EMPTY = 0;
     static final int SIMTIME = 3;		//simulating time
     static final int MAXROTATE = 4;
-    static final int FIRE = 150;
+    static final int MAXPOSITION = 8;
+    static final int FIRE = 300;
+    static final int MINIMUN_CHAIN_BLOCK = 2;
+    static final int ALL = MAXROTATE * MAXPOSITION;
+    
+    int maxDeep = 0;
+    int nodeCount;
+    
     Random random = new Random();
     int turn = -1;
     Pack[] pack;
@@ -30,6 +36,7 @@ public class Main {
     int[] rott;
     Board my;
     Board op;
+    int miniFire = 0;
 
     class Board implements Cloneable {
 
@@ -69,186 +76,77 @@ public class Main {
         	}
         }
         
-        public void setPack(Pack p, int setPos) {
-        	for (int i = 0; i < packSize; i++) {
-        		for (int j = 0; j < packSize; j++) {
-        			this.simulateBoard[i][j + setPos] = p.pack[i][j];
-        		}
-        	}
-        	this.fallBlock();
-        }
+		public void setPack(Pack p, int setPos) {
+			for (int i = 0; i < packSize; i++) {
+				for (int j = height + packSize - 1; j >= 0; j--) {
+					if (this.simulateBoard[j][setPos + i] == EMPTY) {
+						for (int k = packSize - 1; k >= 0; k--) {
+							if (p.pack[k][i] != EMPTY) {
+								this.simulateBoard[j][setPos + i] = p.pack[k][i];
+								j--;
+							}
+						}
+						break;
+					}
+				}
+			}
+		}
         
-        public int[] testHMC() {
-        	int sum = 0;
-        	ArrayList<Integer> block = new ArrayList<Integer>(1);
-        	block.add(this.deleteBlock());
-        	while (block.get(sum) > 0) {
-        		//this.showSimulateBoard();
-        		sum++;
-        		this.fallBlock();
-        		block.add(this.deleteBlock());
-        	}
-        	int[] b = new int[block.size()];
-        	for (int i = 0; i < block.size(); i ++) {
-        		b[i] = block.get(i);
-        	}
-        	return b;
-        }
+		public int[] howManyChain() {
+			int sum = 0;
+			ArrayList<Integer> block = new ArrayList<Integer>(1);
+			block.add(this.deleteBlock(0));
+			while (block.get(sum) > 0) {
+				sum++;
+				block.add(this.deleteBlock(this.fallBlock()));
+			}
+			int[] b = new int[block.size() - 1];
+			for (int i = 0; i < block.size() - 1; i ++) {
+				b[i] = block.get(i);
+			}
+			return b;
+		}
         
-        public int testDeleteBlock() {
-        	int deleteCount = 0;
-        	int sum = 0;
-        	boolean[] flag = new boolean[4];
-        	for (int i = this.simulateBoard.length - 1; i > 0; i--) {
-        		for (int j = 0; j < width - 1; j++) {
-        			//when there is no block or obstacle
-        			if (this.simulateBoard[i][j] == 0 || this.simulateBoard[i][j] == obstacle) 
-        				continue;
-        			
-        			//reset flag
-        			for (int k = 0; k < flag.length; k++) 
-        				flag[k] = true;
-        			
-        			for (int x = 2; x <= summation; x++) {
-        				//horizontal
-        				if (j + (x - 1) < width && flag[0]) {
-        					sum = 0;
-        					for (int k = 0; k < x; k++) {
-        						if (this.simulateBoard[i][j + k] != 0) {
-        							sum += Math.abs(this.simulateBoard[i][j + k]);
-        						} else {
-        							flag[0] = false;
-        							break;
-        						}
-        						if (sum > summation)
-        							break;
-        					}
-        					if (flag[0] && sum == summation) {
-        						for (int k = 0; k < x; k++) {
-        							deleteCount++;
-        							this.simulateBoard[i][j + k] = -Math.abs(this.simulateBoard[i][j + k]);
-        						}
-        					}
-        				}
-        				
-        				//vertical
-        				if (i - (x - 1) > 0 && flag[1]) {
-        					sum = 0;
-        					for (int k = 0; k < x; k++) {
-        						if (this.simulateBoard[i - k][j] != 0) {
-        							sum += Math.abs(this.simulateBoard[i - k][j]);
-        						} else {
-        							flag[1] = false;
-        							break;
-        						}
-        						if (sum > summation)
-        							break;
-        					}
-        					if (flag[1] && sum == summation) {
-        						for (int k = 0; k < x; k++) {
-        							deleteCount++;
-        							this.simulateBoard[i - k][j] = -Math.abs(this.simulateBoard[i - k][j]);
-        						}
-        					}
-        				}
-        				
-        				//diagonally to the right
-        				if (flag[2] && i - (x - 1) > 0 && j + (x - 1) < width) {
-        					sum = 0;
-        					for (int k = 0; k < x; k++) {
-        						if (this.simulateBoard[i - k][j + k] != 0) {
-        							sum += Math.abs(this.simulateBoard[i - k][j + k]);
-        						} else {
-        							flag[2] = false;
-        							break;
-        						}
-        						if (sum > summation)
-        							break;
-        					}
-        					if (flag[2] && sum == summation) {
-        						for (int k = 0; k < x; k++) {
-        							deleteCount++;
-        							this.simulateBoard[i - k][j + k] = -Math.abs(this.simulateBoard[i - k][j + k]);
-        						}
-        					}
-        				}
-        				
-        				//diagonally to the left
-        				if (flag[3] && i - (x - 1) > 0 && j - (x - 1) >= 0) {
-        					sum = 0;
-        					for (int k = 0; k < x; k++) {
-        						if (this.simulateBoard[i - k][j - k] != 0) { 
-        							sum += Math.abs(this.simulateBoard[i - k][j - k]);
-        						} else {
-        							flag[3] = false;
-        							break;
-        						}
-        						if (sum > summation)
-        							break;
-        					}
-        					if (flag[3] && sum == summation) {
-        						for (int k = 0; k < x; k++) {
-        							deleteCount++;
-        							this.simulateBoard[i - k][j - k] = -Math.abs(this.simulateBoard[i - k][j - k]);
-        						}
-        					}
-        				}
-        			}
-        		}
-        	}
-        	this.showSimulateBoard();
-        	for (int i = 0; i < this.simulateBoard.length; i++) {
-        		for (int j = 0; j < width; j ++) {
-        			if (this.simulateBoard[i][j] < 0) {
-        				this.simulateBoard[i][j] = EMPTY;
-        			}
-        		}
-        	}
-        	return deleteCount;
-        }
+		public int fallBlock() {
+			boolean flag = false;
+			int maxHeight = height + packSize;
+			while (true) {
+				int sum = 0;
+				for (int i = 0; i < width; i++) {
+					flag = false;
+					for (int j = height + packSize - 1; j > 0; j--) {
+						if (this.simulateBoard[j][i] == EMPTY) {
+							for (int k = j - 1; k >= 0; k--) {
+								if (this.simulateBoard[k][i] != EMPTY) {
+									this.simulateBoard[j][i] = this.simulateBoard[k][i];
+									this.simulateBoard[k][i] = EMPTY;
+									break;
+								}
+								if (k == 0)
+									flag = true;
+							}
+						}
+						if (flag) 
+							break;
+						if (j < maxHeight)
+							maxHeight = j;
+					}
+				}
+				if (sum == 0)
+					break;
+			}
+			return maxHeight;
+		}
         
-        public int[] howManyChain() {
-        	int sum = 0;
-        	ArrayList<Integer> block = new ArrayList<Integer>(1);
-        	block.add(this.deleteBlock());
-        	while (block.get(sum) > 0) {
-        		sum++;
-        		this.fallBlock();
-        		block.add(this.deleteBlock());
-        	}
-        	int[] b = new int[block.size()];
-        	for (int i = 0; i < block.size(); i ++) {
-        		b[i] = block.get(i);
-        	}
-        	return b;
-        }
-        
-        public void fallBlock() {
-        	while (true) {
-        		int sum = 0;
-        		for (int i = this.simulateBoard.length - 1; i > 0; i--) {
-        			for (int j = 0; j < width; j++) {
-        				if (this.simulateBoard[i][j] == 0 && this.simulateBoard[i - 1][j] > 0) {
-        					sum++;
-        					this.simulateBoard[i][j] = this.simulateBoard[i - 1][j];
-        					this.simulateBoard[i - 1][j] = 0;
-        				}	
-        			}
-        		}
-        		if (sum == 0)
-        			break;
-        	}
-        }
-        
-        public int deleteBlock() {
-        	int deleteCount = 0;
-        	int sum = 0;
-        	boolean[] flag = new boolean[4];
-        	for (int i = this.simulateBoard.length - 1; i > 0; i--) {
-        		for (int j = 0; j < width - 1; j++) {
-        			//when there is no block or obstacle
-        			if (this.simulateBoard[i][j] == 0 || this.simulateBoard[i][j] == obstacle) 
-        				continue;
+		public int deleteBlock(int height) {
+			int deleteCount = 0;
+			int sum = 0;
+			boolean[] flag = new boolean[4];
+			for (int i = this.simulateBoard.length - 1; i >= height; i--) {
+				for (int j = 0; j < width - 1; j++) {
+					//when there is no block or obstacle
+					if (this.simulateBoard[i][j] == 0 || this.simulateBoard[i][j] == obstacle) 
+						continue;
         			
         			//reset flag
         			for (int k = 0; k < flag.length; k++) 
@@ -395,6 +293,7 @@ public class Main {
     }
     
     class Pack implements Cloneable {
+
     	int[][] pack = new int[width][height];
     	
     	public void packRotate(int rot) {
@@ -440,71 +339,186 @@ public class Main {
     		return cpy;
     	}
     }
+
+    public class Node {
+    	Node parent = null;
+    	ArrayList<Node> children = null;
+    	Board board;
+    	int childCount = 0;
+    	int[] set = null; 	//set[0] = pos, set[1] = rot
+    	int turn;
+    	int deep;
+    	int id;
+    	boolean isChain;
+    	double maxScore = 0;
+    	
+    	public Node (Node parent, int[] s, int nowTurn, int deep) {
+    		this.parent = parent;
+    		this.turn = nowTurn;
+    		this.set = s;
+    		this.deep = deep;
+    		if (this.deep > maxDeep) {
+    			maxDeep = this.deep;
+    		}
+    		this.id = nodeCount++;
+    		this.isChain = false;
+    	}
+    	
+    	public void setBoard(Board b) {
+    		if (this.board == null)
+    			this.board = b;
+    	}
+    	
+    	public void addChild() {
+    		this.children = new ArrayList<Node>(32);
+    		for (int i = 0; i < MAXPOSITION; i++) {
+    			for (int j = 0; j < MAXROTATE; j++) {
+    				int[] s = {i, j};
+    				this.children.add(new Node(this, s, this.turn + 1, this.deep + 1));
+    				this.childCount++;
+    			}
+    		}
+    	}
+    	
+    	public void updateMaxScore() {
+    		for (Node n = this; n.parent != null; n = n.parent) {
+    			if (n.parent.maxScore < n.maxScore) 
+    				n.parent.maxScore = n.maxScore;
+    			else 
+    				break;
+    		}
+    	}
+    	
+    	public int maxScoreChildIndex() {
+    		int max = 0;
+    		for (int i = 0; i < this.children.size(); i++) {
+    			if (this.children.get(i).maxScore > this.children.get(max).maxScore) {
+    				max = i;
+    			}
+    		}
+    		return max;
+    	}
+    	
+    	public void showAllChildren() {
+    		for (int i = 0; i < this.children.size(); i++) {
+    			Node child = this.children.get(i);
+    			System.err.printf("id : %2d, maxScore : %3f, children : %2d\n"
+    					,child.id , child.maxScore, child.childCount);
+    		}
+    	}
+    } 
     
     public class AllSearch {
     	private Pack[] packs;
     	private Board board;
     	private int obstacle;
+    	private Node root;
+    	private ArrayDeque<Node> queue;
     	public AllSearch(Pack[] p, Board b, int obstacle) {
     		this.packs = p;
     		this.board = b;
     		this.obstacle = obstacle;
+    		root = new Node(null, null, turn - 1, 0);  //now status
+    		root.setBoard(this.board);
+    		queue = new ArrayDeque<Node>(32);
+    		root.addChild();
+    		for (int i = 0; i < ALL; i++) {
+    			queue.addLast(root.children.get(i));
+    		}
     	}
     	
-    	public int[][] simulate() {
-    		boolean insuranceFlag = true;
-    		int maxScore = 0;
-    		int nowScore = 0;
-    		int[] rotate;
-    		int[] position;
-    		int[][] best = new int[2][SIMTIME];
-    		int[][] insurance = new int[2][SIMTIME];
-    		for (int i = 0; i < (int)Math.pow(8, SIMTIME); i++) {
-    			position = shinsu(i, 8);
-    			
-    			for (int j = 0; j < (int)Math.pow(4, SIMTIME); j++) {
-    				rotate = shinsu(j, 4);
-    				Board b = (Board) this.board.clone();
-    				int ojama = this.obstacle;
-    				nowScore = 0;
-    				
-    				for (int k = 0; k < SIMTIME; k++ ) {
-    					Pack nowPack = (Pack)this.packs[k].clone();
-    					if (ojama > 0) {
-    						ojama = nowPack.fillObstaclePack(ojama);
-    					}
-    					nowPack.packRotate(rotate[k]);
-    					b.setPack(nowPack, position[k]);
-    					int[] block = b.howManyChain();
-    					nowScore = score(block);
-    					if (b.dangerZone()) {
+    	public int[] simulateOneTurn(Board board, Pack pack, int[] set) {
+    		board.obstacleNum = pack.fillObstaclePack(board.obstacleNum);
+    		pack.packRotate(set[1]);
+    		board.setPack(pack, set[0]);
+    		return board.howManyChain();
+    	}
+    	
+    	public int oneBlockFall(Board board) {
+    		int max = 0;
+    		for (int i = 0; i < width; i++) {
+    			for (int j = 0; j < height; j++) {
+    				if (board.simulateBoard[j][i] != 0){
+    					if (j == 0)
     						break;
-    					}
-						if (nowScore > FIRE && k == 0) {
-							int[][] fire = {{rotate[0]}, {position[0]}};
-							//System.err.printf("rota:%d, pos:%d, Score:%d\n", rotate[0], position[0], nowScore);
-							//debugArray(block);
-							return fire;
-						}
-
-    					if (!b.dangerZone() && k == SIMTIME - 1 && insuranceFlag){
-    	    				insurance[0] = Arrays.copyOf(rotate, rotate.length);
-    	    				insurance[1] = Arrays.copyOf(position, position.length);
-    	    				insuranceFlag = false;
-    					}
-    					if (nowScore > maxScore) {
-    						maxScore = nowScore;
-    						best[0] = Arrays.copyOf(rotate, rotate.length);
-    						best[1] = Arrays.copyOf(position, position.length);
+    					
+    					for (int k = 1; k < 9; k++) {
+    						board.simulateBoard[j - 1][i] = k;
+    						int score = score(board.howManyChain());
+    						if (score > max)
+    							max = score;
     					}
     				}
     			}
     		}
-    		//System.err.printf("turn : %d, score : %d\n", turn, maxScore);
-    		if (maxScore <= 0) {
-    			return insurance;
+    		return max;
+    	}
+    	
+    	public int[] breadthFirstSearch() {
+    		int[] block;
+    		double score = 0;
+    		while (this.queue.size() > 0) {
+    			Node n = this.queue.removeFirst();
+    			Board b = (Board) n.parent.board.clone();
+    			block = this.simulateOneTurn(b, (Pack)pack[n.turn].clone(), n.set);
+    			score = (double)score(block);
+    			if (b.dangerZone()) {
+    				n.parent.children.remove(n);
+    				continue;
+    			}
+    			
+    			if (n.deep == 1) {
+    				if (miniFire != 0) {
+    					if (score > miniFire) {
+    						System.err.println("FIRE");
+    						return n.set;
+    					}
+    				} else {
+    					if (score > FIRE) {
+    						System.err.println("FIRE");
+    						return n.set;
+    					}
+    				}
+//    				if (block.length < 2) {
+    					n.setBoard(b);
+    					n.addChild();
+    					for (int i = 0; i < n.children.size(); i++){
+    						queue.addLast(n.children.get(i));
+    					}
+//    				}
+    			} else {
+    				n.maxScore = (score / Math.pow(1.1, n.deep));
+    				n.updateMaxScore();
+    				if (n.deep < SIMTIME) {
+    					n.setBoard(b);
+    					n.addChild();
+    					for (int i = 0; i < ALL; i++) {
+    						queue.addLast(n.children.get(i));
+    					}
+    				}
+    			}
     		}
-			return best;
+    		root.showAllChildren();
+    		try {
+    			return root.children.get(root.maxScoreChildIndex()).set;
+    		} catch (IndexOutOfBoundsException e) {
+    			int[] s = {0, 0};
+    			return (s);
+    		}
+    		
+    	}
+    	
+    	public double chainQuality(int[] block) {
+    		if (block.length == 0)
+    			return 1.0;
+    		int sum = 0;
+    		for (int i = 0; i < block.length; i++) {
+    			if (block[i] > 0)
+    				sum += block[i];
+    			else 
+    				break;
+    		}
+    		return Math.pow(1.00000001, sum / block.length - 2);
     	}
     }
     
@@ -537,32 +551,27 @@ public class Main {
                 }
                 in.next();
            }
-           int[][] best = new int[2][SIMTIME];
+           int[] best = new int[2];
            while (true) {
-                turn = in.nextInt();
-                millitime = in.nextLong();
-                my = new Board(width, height, in);
-                op = new Board(width, height, in);
-                int col = 0, rot = 0;
-                Pack[] packs = new Pack[SIMTIME];
-                for (int i = 0; i < SIMTIME; i++) {
-                	packs[i] = (Pack) pack[turn + i].clone();
-                }
-                AllSearch search = new AllSearch(packs, my, my.obstacleNum);
-                best = search.simulate();
-
-                rot = best[0][0];
-                col = best[1][0];
-                println(col + " " + rot);
-                /*
-                if (best[0].length == 1) {
-                	packs[0].fillObstaclePack(my.obstacleNum);
-                	packs[0].packRotate(rot);
-                	my.setPack(packs[0], col);
-                	my.testHMC();
-                	my.showSimulateBoard();
-                }
-                */
+        	   System.err.println("TURN : " + (turn + 1));
+        	   nodeCount = 0;
+               turn = in.nextInt();
+               millitime = in.nextLong();
+               my = new Board(width, height, in);
+               op = new Board(width, height, in);
+               int col = 0, rot = 0;
+               Pack[] packs = new Pack[SIMTIME];
+               for (int i = 0; i < SIMTIME; i++) {
+            	   packs[i] = (Pack) pack[turn + i].clone();
+               }
+               if (my.obstacleNum > 10) {
+            	   miniFire = 5 * 10;
+               }
+               AllSearch search = new AllSearch(packs, my, my.obstacleNum);
+               best = search.breadthFirstSearch();
+               col = best[0];
+               rot = best[1];
+               println(col + " " + rot);
             }
         }
     }
