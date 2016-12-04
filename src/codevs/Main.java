@@ -514,7 +514,6 @@ public class Main {
     		if (block.length == 0)
     			return 1.0;
     		int sum = 0;
-    		double base = 1.01;
     		for (int i = 0; i < block.length; i++) {
     			if (block[i] > 0)
     				sum += block[i];
@@ -522,65 +521,6 @@ public class Main {
     				break;
     		}
     		return Math.pow(1.00000001, sum / block.length - 2);
-    	}
-    	
-    	public int[][] simulate() {
-    		boolean insuranceFlag = true;
-    		double maxScore = 0;
-    		double nowScore = 0;
-    		int[] rotate;
-    		int[] position;
-    		int[][] best = new int[2][SIMTIME];
-    		int[][] insurance = new int[2][SIMTIME];
-    		for (int i = 0; i < (int)Math.pow(8, SIMTIME); i++) {
-    			position = shinsu(i, 8);
-    			
-    			for (int j = 0; j < (int)Math.pow(4, SIMTIME); j++) {
-    				rotate = shinsu(j, 4);
-    				Board b = (Board) this.board.clone();
-    				int ojama = this.obstacle;
-    				nowScore = 0;
-    				
-    				for (int k = 0; k < SIMTIME; k++ ) {
-    					Pack nowPack = (Pack)this.packs[k].clone();
-    					if (ojama > 0) {
-    						ojama = nowPack.fillObstaclePack(ojama);
-    					}
-    					nowPack.packRotate(rotate[k]);
-    					b.setPack(nowPack, position[k]);
-    					int[] block = b.howManyChain();
-    					nowScore = score(block);
-    					if (b.dangerZone()) {
-    						break;
-    					}
-						if (nowScore > FIRE && k == 0) {
-							int[][] fire = {{rotate[0]}, {position[0]}};
-							//System.err.printf("rota:%d, pos:%d, Score:%d\n", rotate[0], position[0], nowScore);
-							//debugArray(block);
-							return fire;
-						}
-
-    					if (!b.dangerZone() && k == SIMTIME - 1 && insuranceFlag){
-    	    				insurance[0] = Arrays.copyOf(rotate, rotate.length);
-    	    				insurance[1] = Arrays.copyOf(position, position.length);
-    	    				insuranceFlag = false;
-    					}
-    					
-    					//nowScore *= this.chainQuality(block);
-    					if (nowScore > maxScore) {
-    						maxScore = nowScore;
-    						best[0] = Arrays.copyOf(rotate, rotate.length);
-    						best[1] = Arrays.copyOf(position, position.length);
-    					}
-    				}
-    			}
-    		}
-    		//System.err.printf("turn : %d, score : %d\n", turn, maxScore);
-    		if (maxScore <= 0) {
-    			return insurance;
-    		}
-    		System.err.printf("maxScore : %f\n", maxScore);
-			return best;
     	}
     }
     
